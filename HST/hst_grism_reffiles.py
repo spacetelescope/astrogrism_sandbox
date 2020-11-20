@@ -17,7 +17,8 @@ def create_dispx_model(e):
 
     @custom_model
     def dispx_model(x, y, t):
-        """This is POLY12 from grismconf poly.py"""
+        """This is POLY12 from GRISMCONF's poly.py
+        see https://github.com/npirzkal/GRISMCONF/blob/master/grismconf/poly.py"""
         return e[0,0] + x*e[0,1] + y*e[0,2] + x**2*e[0,3] + x*y*e[0,4] + y**2*e[0,5] + t*(e[1,0] + x*e[1,1] + y*e[1,2] + x**2*e[1,3] + x*y*e[1,4] + y**2*e[1,5])
 
     return dispx_model
@@ -69,6 +70,11 @@ def create_grism_specwcs(conffile="",
                          history="",
                          outname=None):
     """
+    Note: This code is shamelessly stolen from the jwreftools package
+    (see https://github.com/spacetelescope/jwreftools/) and adapted for use
+    on HST GRISMCONF files. The docstrings and comments have not yet been
+    updated accordingly.
+
     Create an asdf reference file to hold Grism C (column) or Grism R (rows)
     configuration information, no sensativity information is included
 
