@@ -1,4 +1,3 @@
-
 import re
 import datetime
 import numpy as np
@@ -6,22 +5,11 @@ import numpy as np
 from asdf.tags.core import Software, HistoryEntry
 
 from astropy import units as u
-from astropy.modeling.models import Polynomial1D, custom_model
+from astropy.modeling.models import Polynomial1D
 
 from jwst.datamodels import NIRCAMGrismModel
 from jwst.datamodels import wcs_ref_models
-
-def create_dispx_model(e):
-    e = np.array(e)
-    print(e)
-
-    @custom_model
-    def dispx_model(x, y, t):
-        """This is POLY12 from GRISMCONF's poly.py
-        see https://github.com/npirzkal/GRISMCONF/blob/master/grismconf/poly.py"""
-        return e[0,0] + x*e[0,1] + y*e[0,2] + x**2*e[0,3] + x*y*e[0,4] + y**2*e[0,5] + t*(e[1,0] + x*e[1,1] + y*e[1,2] + x**2*e[1,3] + x*y*e[1,4] + y**2*e[1,5])
-
-    return dispx_model
+from dispersion_models import create_dispxy_model
 
 def common_reference_file_keywords(reftype=None,
                                    title=None,
@@ -220,25 +208,18 @@ def create_grism_specwcs(conffile="",
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
         e = beamdict[order]['DISPX']
-        xmodel = create_dispx_model(e)
+        xmodel = create_dispxy_model(e)
         dispx.append(xmodel)
         print(dispx)
-        if x1 == 0:
-            xmodel = Polynomial1D(1, c0=0, c1=0)
-        else:
-            xmodel = Polynomial1D(1, c0=-x0/x1, c1=1./x1)
-        invdispx.append(xmodel)
+        inv_xmodel = create_dispx_model(e, inverse=True)
+        invdispx.append(inv_xmodel)
 
         # This holds the y coefficients, for the C grism, this model is
         # the INVDISPY, returning t, for the R grism, this model is the DISPY
-        y0, y1 = beamdict[order]['DISPY']
-        ymodel = Polynomial1D(1, c0=y0, c1=y1)
+        e = beamdict[order]['DISPY']
+        ymodel = create_dispxy_model(e)
         dispy.append(ymodel)
-        if y1 == 0:
-            ymodel = Polynomial1D(1, c0=0, c1=0)
-        else:
-            x0, x1 = beamdict[order]['DISPX'][0:2]
-            ymodel = Polynomial1D(1, c0=-y0/y1, c1=1./y1)
+        inv_ymodel = create_dispxy_model(e, inverse=True)
         invdispy.append(ymodel)
 
     # change the orders into translatable integers
