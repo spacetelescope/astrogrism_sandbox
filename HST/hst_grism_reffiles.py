@@ -211,7 +211,7 @@ def create_grism_specwcs(conffile="",
         xmodel = create_dispxy_model(e)
         dispx.append(xmodel)
         print(dispx)
-        inv_xmodel = create_dispx_model(e, inverse=True)
+        inv_xmodel = create_dispxy_model(e, inverse=True)
         invdispx.append(inv_xmodel)
 
         # This holds the y coefficients, for the C grism, this model is
@@ -475,7 +475,7 @@ def split_order_info(keydict):
             continue
         if token.match(key):
             b = key.split("_")[1].upper()
-            newkey = key.replace("_{}".format(b), "")
+            newkey = key.replace("_{}_".format(b), "_")
             rdict[b][newkey] = keydict[key]
 
     # look for range variables to make them into tuples
