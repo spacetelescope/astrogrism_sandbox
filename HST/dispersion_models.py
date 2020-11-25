@@ -16,7 +16,7 @@ def create_dispxy_model(e, inverse=False):
     def disp_model(x, y, t):
         coeffs = [1, x, y, x**2, x*y, y**2]
         if inverse:
-            return (d - np.dot(coeffs,e[0,:]))/np.dot(coeffs,e[1,:])
+            return (t - np.dot(coeffs,e[0,:]))/np.dot(coeffs,e[1,:])
         else:
             return np.dot(coeffs,e[0,:]) + t*np.dot(coeffs,e[1,:])
 

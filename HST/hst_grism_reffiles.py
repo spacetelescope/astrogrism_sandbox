@@ -208,18 +208,18 @@ def create_grism_specwcs(conffile="",
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
         e = beamdict[order]['DISPX']
-        xmodel = create_dispxy_model(e)
+        xmodel = create_dispxy_model(e)()
         dispx.append(xmodel)
         print(dispx)
-        inv_xmodel = create_dispxy_model(e, inverse=True)
+        inv_xmodel = create_dispxy_model(e, inverse=True)()
         invdispx.append(inv_xmodel)
 
         # This holds the y coefficients, for the C grism, this model is
         # the INVDISPY, returning t, for the R grism, this model is the DISPY
         e = beamdict[order]['DISPY']
-        ymodel = create_dispxy_model(e)
+        ymodel = create_dispxy_model(e)()
         dispy.append(ymodel)
-        inv_ymodel = create_dispxy_model(e, inverse=True)
+        inv_ymodel = create_dispxy_model(e, inverse=True)()
         invdispy.append(ymodel)
 
     # change the orders into translatable integers
@@ -234,7 +234,9 @@ def create_grism_specwcs(conffile="",
     ref.meta.output_units = u.micron
     ref.displ = displ
     ref.dispx = dispx
+    print(ref.dispx)
     ref.dispy = dispy
+    print(ref.dispy)
     ref.invdispx = invdispx
     ref.invdispy = invdispy
     ref.invdispl = invdispl
