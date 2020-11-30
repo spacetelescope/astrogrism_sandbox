@@ -37,4 +37,5 @@ class DISPXY_ModelConverter(Converter):
 class DISPXY_Extension():
     extension_uri = "asdf://stsci.edu/grismstuff/extensions/extension-1.0"
     converters = [DISPXY_ModelConverter()]
-    tags = ["asdf://stsci.edu/grismstuff/tags/dispxy_model-1.0"]
+    tags = ["tag:stsci.edu:grismstuff/dispxy_model-1.0.0"]
+    #tags = ["asdf://stsci.edu/grismstuff/tags/dispxy_model-1.0"]

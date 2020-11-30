@@ -2,6 +2,7 @@ import re
 import datetime
 import numpy as np
 
+import asdf
 from asdf.tags.core import Software, HistoryEntry
 
 from astropy import units as u
@@ -9,7 +10,7 @@ from astropy.modeling.models import Polynomial1D
 
 from jwst.datamodels import NIRCAMGrismModel
 from jwst.datamodels import wcs_ref_models
-from dispersion_models import create_dispxy_model
+from dispersion_models import DISPXY_Model, DISPXY_Extension
 
 def common_reference_file_keywords(reftype=None,
                                    title=None,
@@ -35,7 +36,7 @@ def common_reference_file_keywords(reftype=None,
         "instrument": {"name": "NIRCAM"},
         "pedigree": "ground",
         "reftype": reftype,
-        "telescope": "JWST",
+        "telescope": "HST",
         "title": title,
         "useafter": useafter,
         }
@@ -63,8 +64,8 @@ def create_grism_specwcs(conffile="",
     on HST GRISMCONF files. The docstrings and comments have not yet been
     updated accordingly.
 
-    Create an asdf reference file to hold Grism C (column) or Grism R (rows)
-    configuration information, no sensativity information is included
+    Create an asdf reference file to hold grism configuration information. No
+    sensitivity information is included
 
     Note: The orders are named alphabetically, i.e. Order A, Order B
     There are also sensativity fits files which are tables of wavelength,
@@ -129,11 +130,11 @@ def create_grism_specwcs(conffile="",
     print("Pupil is {}".format(pupil))
 
     ref_kw = common_reference_file_keywords(reftype="specwcs",
-                                            title="NIRCAM Grism Parameters",
+                                            title="HST IR Grism Parameters",
                                             description="{0:s} dispersion models".format(pupil),
-                                            exp_type="NRC_WFSS",
+                                            exp_type="WFC3_IR",
                                             author=author,
-                                            model_type="NIRCAMGrismModel",
+                                            model_type="HSTIRGrismModel",
                                             module=module,
                                             pupil=pupil,
                                             filename=outname,
@@ -208,25 +209,28 @@ def create_grism_specwcs(conffile="",
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
         e = beamdict[order]['DISPX']
-        xmodel = create_dispxy_model(e)()
+        xmodel = DISPXY_Model(e)
         dispx.append(xmodel)
         print(dispx)
-        inv_xmodel = create_dispxy_model(e, inverse=True)()
+        inv_xmodel = DISPXY_Model(e, inverse=True)
         invdispx.append(inv_xmodel)
 
         # This holds the y coefficients, for the C grism, this model is
         # the INVDISPY, returning t, for the R grism, this model is the DISPY
         e = beamdict[order]['DISPY']
-        ymodel = create_dispxy_model(e)()
+        ymodel = DISPXY_Model(e)
         dispy.append(ymodel)
-        inv_ymodel = create_dispxy_model(e, inverse=True)()
+        inv_ymodel = DISPXY_Model(e, inverse=True)
         invdispy.append(ymodel)
 
     # change the orders into translatable integers
     # so that we can look up the order with the proper index
     oo = [int(o) for o in beamdict]
 
-    ref = NIRCAMGrismModel()
+    # We need to register the converter for the DISPXY_Model class with asdf
+    asdf.get_config().add_extension(DISPXY_Extension())
+
+    ref = HSTIRGrismModel()
     ref.meta.update(ref_kw)
     # This reference file is good for NRC_WFSS and TSGRISM modes
     ref.meta.exposure.p_exptype = "NRC_WFSS|NRC_TSGRISM"
