@@ -8,7 +8,8 @@ from asdf.tags.core import Software, HistoryEntry
 from astropy import units as u
 from astropy.modeling.models import Polynomial1D
 
-from jwst.datamodels import NIRCAMGrismModel
+#from jwst.datamodels import NIRCAMGrismModel
+from wcs_ref_model import WFC3IRGrismModel
 from jwst.datamodels import wcs_ref_models
 from dispersion_models import DISPXY_Model, DISPXY_Extension
 
@@ -134,7 +135,7 @@ def create_grism_specwcs(conffile="",
                                             description="{0:s} dispersion models".format(pupil),
                                             exp_type="WFC3_IR",
                                             author=author,
-                                            model_type="HSTIRGrismModel",
+                                            model_type="NIRCAMGrismModel",
                                             module=module,
                                             pupil=pupil,
                                             filename=outname,
@@ -211,8 +212,7 @@ def create_grism_specwcs(conffile="",
         e = beamdict[order]['DISPX']
         xmodel = DISPXY_Model(e)
         dispx.append(xmodel)
-        print(dispx)
-        inv_xmodel = DISPXY_Model(e, inverse=True)
+        inv_xmodel = DISPXY_Model(e, inv=True)
         invdispx.append(inv_xmodel)
 
         # This holds the y coefficients, for the C grism, this model is
@@ -220,7 +220,7 @@ def create_grism_specwcs(conffile="",
         e = beamdict[order]['DISPY']
         ymodel = DISPXY_Model(e)
         dispy.append(ymodel)
-        inv_ymodel = DISPXY_Model(e, inverse=True)
+        inv_ymodel = DISPXY_Model(e, inv=True)
         invdispy.append(ymodel)
 
     # change the orders into translatable integers
@@ -230,7 +230,8 @@ def create_grism_specwcs(conffile="",
     # We need to register the converter for the DISPXY_Model class with asdf
     asdf.get_config().add_extension(DISPXY_Extension())
 
-    ref = HSTIRGrismModel()
+    ref = WFC3IRGrismModel()
+    #ref = NIRCAMGrismModel()
     ref.meta.update(ref_kw)
     # This reference file is good for NRC_WFSS and TSGRISM modes
     ref.meta.exposure.p_exptype = "NRC_WFSS|NRC_TSGRISM"

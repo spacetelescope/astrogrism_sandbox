@@ -4,7 +4,7 @@ from stdatamodels.validate import ValidationWarning
 
 from jwst.datamodels import ReferenceFileModel
 
-class HST_IR_GrismModel(ReferenceFileModel):
+class WFC3IRGrismModel(ReferenceFileModel):
     """
     A model for a reference file of type "specwcs" for HST IR grisms (G141 and
     G102). This reference file contains the models for wave, x, and y \
@@ -39,7 +39,7 @@ class HST_IR_GrismModel(ReferenceFileModel):
                        invdispy=None,
                        orders=None,
                        **kwargs):
-        super(NIRCAMGrismModel, self).__init__(init=init, **kwargs)
+        super(WFC3IRGrismModel, self).__init__(init=init, **kwargs)
 
         if init is None:
             self.populate_meta()
@@ -59,17 +59,17 @@ class HST_IR_GrismModel(ReferenceFileModel):
             self.orders = orders
 
     def populate_meta(self):
-        self.meta.instrument.name = "NIRCAM"
-        self.meta.exposure.type = "NRC_WFSS"
+        self.meta.instrument.name = "WFC3"
+        self.meta.exposure.type = "IR_GRISM"
         self.meta.reftype = self.reftype
 
     def validate(self):
-        super(NIRCAMGrismModel, self).validate()
+        super(WFC3IRGrismModel, self).validate()
         try:
             assert isinstance(self.meta.input_units, (str, u.NamedUnit))
             assert isinstance(self.meta.output_units, (str, u.NamedUnit))
-            assert self.meta.instrument.name == "NIRCAM"
-            assert self.meta.exposure.type == "NRC_WFSS"
+            assert self.meta.instrument.name == "WFC3"
+            assert self.meta.exposure.type == "IR_GRISM"
             assert self.meta.reftype == self.reftype
         except AssertionError as errmsg:
             if self._strict_validation:
