@@ -34,7 +34,7 @@ def common_reference_file_keywords(reftype=None,
         "author": author,
         "description": description,
         "exposure": {"type": exp_type},
-        "instrument": {"name": "NIRCAM"},
+        "instrument": {"name": "WFC3"},
         "pedigree": "ground",
         "reftype": reftype,
         "telescope": "HST",
@@ -114,11 +114,11 @@ def create_grism_specwcs(conffile="",
 
     Returns
     -------
-    fasdf : asdf.AsdfFile(jwst.datamodels.NIRCAMGrismModel)
+    fasdf : asdf.AsdfFile(WFC3IRGrismModel)
 
     """
     if outname is None:
-        outname = "nircam_wfss_specwcs.asdf"
+        outname = "wfc3_ir_specwcs.asdf"
     if not history:
         history = "Created from {0:s}".format(conffile)
 
@@ -135,7 +135,7 @@ def create_grism_specwcs(conffile="",
                                             description="{0:s} dispersion models".format(pupil),
                                             exp_type="WFC3_IR",
                                             author=author,
-                                            model_type="NIRCAMGrismModel",
+                                            model_type="WFC3IRGrismModel",
                                             module=module,
                                             pupil=pupil,
                                             filename=outname,
@@ -231,7 +231,6 @@ def create_grism_specwcs(conffile="",
     asdf.get_config().add_extension(DISPXY_Extension())
 
     ref = WFC3IRGrismModel()
-    #ref = NIRCAMGrismModel()
     ref.meta.update(ref_kw)
     # This reference file is good for NRC_WFSS and TSGRISM modes
     ref.meta.exposure.p_exptype = "NRC_WFSS|NRC_TSGRISM"
