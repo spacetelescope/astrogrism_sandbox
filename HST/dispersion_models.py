@@ -9,17 +9,18 @@ class DISPXY_Model(Model):
     _tag = "tag:stsci.edu:grismstuff/dispxy_model-1.0.0"
     _name = "DISPXY_Model"
 
-    def __init__(self, ematrix, inv=False):
+    def __init__(self, ematrix, offset, inv=False):
         self.ematrix = np.array(ematrix)
         self.inv = inv
 
+    # Note that in the inverse case, input "t" here is actually dx or dy
     def evaluate(self, x, y, t):
         e = self.ematrix
         coeffs = np.array([1, x, y, x**2, x*y, y**2])
         if self.inv:
-            return (t - np.dot(coeffs, e[0,:]))/np.dot(coeffs, e[1,:])
+            return (t + offset - np.dot(coeffs, e[0,:]))/np.dot(coeffs, e[1,:])
         else:
-            return np.dot(coeffs, e[0,:]) + t*np.dot(coeffs, e[1,:])
+            return np.dot(coeffs, e[0,:]) + t*np.dot(coeffs, e[1,:]) - offset
 
 class DISPXY_ModelConverter(Converter):
     tags = ["tag:stsci.edu:grismstuff/dispxy_model-*"]
