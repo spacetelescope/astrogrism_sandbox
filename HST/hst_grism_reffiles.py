@@ -19,7 +19,6 @@ def common_reference_file_keywords(reftype=None,
                                    exp_type=None,
                                    author="STScI",
                                    useafter="2014-01-01T00:00:00",
-                                   module=None,
                                    fname=None,
                                    pupil=None, **kwargs):
     """
@@ -46,8 +45,6 @@ def common_reference_file_keywords(reftype=None,
         ref_file_common_keywords["instrument"]["filter"] = fname
     if pupil is not None:
         ref_file_common_keywords["instrument"]["pupil"] = pupil
-    if module is not None:
-        ref_file_common_keywords["instrument"]["module"] = module
 
     ref_file_common_keywords.update(kwargs)
     return ref_file_common_keywords
@@ -55,7 +52,7 @@ def common_reference_file_keywords(reftype=None,
 
 def create_grism_specwcs(conffile="",
                          pupil=None,
-                         module=None,
+                         direct_filter=None,
                          author="STScI",
                          history="",
                          outname=None):
@@ -125,9 +122,6 @@ def create_grism_specwcs(conffile="",
     # if pupil is none get from filename like NIRCAM_modB_R.conf
     if pupil is None:
         pupil = "GRISM" + conffile.split(".")[0][-1]
-    # if module is none get from filename
-    if module is None:
-        module = conffile.split(".")[0][-3]
     print("Pupil is {}".format(pupil))
 
     ref_kw = common_reference_file_keywords(reftype="specwcs",
@@ -136,7 +130,7 @@ def create_grism_specwcs(conffile="",
                                             exp_type="WFC3_IR",
                                             author=author,
                                             model_type="WFC3IRGrismModel",
-                                            module=module,
+                                            fname=direct_filter,
                                             pupil=pupil,
                                             filename=outname,
                                             )
@@ -144,6 +138,13 @@ def create_grism_specwcs(conffile="",
     # get all the key-value pairs from the input file
     conf = dict_from_file(conffile)
     beamdict = split_order_info(conf)
+
+    # Get x and y offsets from the filter, if necessary
+    if direct_filter is not None:
+        wx = beamdict["WEDGE"][direct_filter][0]
+        wy = beamdict["WEDGE"][direct_filter][0]
+    else:
+        wx, wy = 0, 0
 
     # beam = re.compile('^(?:[+\-]){0,1}[a-zA-Z0-9]{0,1}$')  # match beam only
     # read in the sensitivity tables to save their content
@@ -464,10 +465,11 @@ def split_order_info(keydict):
 
     # prefetch number of Beams, beam is the second string
     for key in keydict:
-        # Reject WEDGE keys that would otherwise match beam regex
+        # Separate WEDGE keys that would otherwise match beam regex
         if key[0:5] == "WEDGE":
-            continue
-        if token.match(key):
+            if "WEDGE" not in beams:
+                beams.append("WEDGE")
+        elif token.match(key):
             b = key.split("_")[1].upper()
             if b not in beams:
                beams.append(b)
@@ -478,8 +480,9 @@ def split_order_info(keydict):
     for key in keydict:
         # Again, reject WEDGE keys
         if key[0:5] == "WEDGE":
-            continue
-        if token.match(key):
+            b, fname = key.split("_")
+            rdict[b][fname] = keydict[key]
+        elif token.match(key):
             b = key.split("_")[1].upper()
             newkey = key.replace("_{}_".format(b), "_")
             rdict[b][newkey] = keydict[key]
