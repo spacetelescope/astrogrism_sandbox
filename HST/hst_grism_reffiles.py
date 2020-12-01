@@ -146,6 +146,8 @@ def create_grism_specwcs(conffile="",
     else:
         wx, wy = 0, 0
 
+    beamdict.pop("WEDGE")
+
     # beam = re.compile('^(?:[+\-]){0,1}[a-zA-Z0-9]{0,1}$')  # match beam only
     # read in the sensitivity tables to save their content
     # they currently have names like this: NIRCam.A.1st.sensitivity.fits
