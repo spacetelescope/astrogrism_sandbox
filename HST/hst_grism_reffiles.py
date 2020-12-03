@@ -260,12 +260,12 @@ def create_grism_specwcs(conffile="",
     ref.validate()
 
 
-def create_tsgrism_wavelengthrange(outname="nircam_tsgrism_wavelengthrange.asdf",
-                                   history="Ground NIRCAM TSGrism wavelengthrange",
+def create_tsgrism_wavelengthrange(outname="wfc3_tsgrism_wavelengthrange.asdf",
+                                   history="WFC3 TSGrism wavelengthrange",
                                    author="STScI",
                                    wavelengthrange=None,
                                    extract_orders=None):
-    """Create a wavelengthrange reference file for NIRCAM TSGRISM mode.
+    """Create a wavelengthrange reference file for WFC3 TSGRISM mode.
 
     Parameters
     ----------
@@ -283,9 +283,9 @@ def create_tsgrism_wavelengthrange(outname="nircam_tsgrism_wavelengthrange.asdf"
 
     """
     ref_kw = common_reference_file_keywords(reftype="wavelengthrange",
-                                            title="NIRCAM TSGRISM reference file",
-                                            description="NIRCAM Grism-Filter Wavelength Ranges",
-                                            exp_type="NRC_TSGRISM",
+                                            title="WFC3 TSGRISM reference file",
+                                            description="WFC3 Grism-Filter Wavelength Ranges",
+                                            exp_type="WFC3_TSGRISM",
                                             author=author,
                                             pupil="ANY",
                                             model_type="WavelengthrangeModel",
@@ -295,14 +295,17 @@ def create_tsgrism_wavelengthrange(outname="nircam_tsgrism_wavelengthrange.asdf"
     if wavelengthrange is None:
         # This is a list of tuples that specify the
         # order, filter, wave min, wave max
-        wavelengthrange = [(1, 'F277W', 2.500411072, 3.807062006),
-                           (1, 'F322W2', 2.5011293930000003, 4.215842089),
-                           (1, 'F356W', 3.001085025, 4.302320901),
-                           (1, 'F444W', 3.696969216, 4.899565197),
-                           (2, 'F277W', 2.500411072, 3.2642254050000004),
-                           (2, 'F322W2', 2.5011293930000003, 4.136119434),
-                           (2, 'F356W', 2.529505253, 4.133416971),
-                           (2, 'F444W', 2.5011293930000003, 4.899565197),
+        wavelengthrange = [(-1, 'G102', 0.7488958984375, 1.1496958984375),
+                           (0, 'G102', 0.7401, 1.2297),
+                           (1, 'G102', 0.7496, 1.1979),
+                           (2, 'G102', 0.7401, 1.1897),
+                           (3, 'G102', 0.7571, 0.9878),
+                           (-1, 'G141', 1.031, 1.7845),
+                           (0, 'G141', 1.0402, 1.6998),
+                           (1, 'G141', 0.9953, 1.7697),
+                           (2, 'G141', 0.9702, 1.5903),
+                           (3, 'G141', 1.0068, 1.3875),
+                           (4, 'G141', 1.031, 1.7845),
                            ]
 
     # array of integers of unique orders
@@ -313,15 +316,13 @@ def create_tsgrism_wavelengthrange(outname="nircam_tsgrism_wavelengthrange.asdf"
     # that should be extracted by default yet so all are
     # included.
     if extract_orders is None:
-        extract_orders = [('F277W', [1]),
-                          ('F322W2', [1]),
-                          ('F356W', [1]),
-                          ('F444W', [1]),
+        extract_orders = [('G102', [1]),
+                          ('G141', [1]),
                           ]
 
     ref = wcs_ref_models.WavelengthrangeModel()
     ref.meta.update(ref_kw)
-    ref.meta.exposure.p_exptype = "NRC_TSGRISM"
+    ref.meta.exposure.p_exptype = "WFC3_TSGRISM"
     ref.meta.input_units = u.micron
     ref.meta.output_units = u.micron
     ref.wavelengthrange = wavelengthrange
@@ -331,14 +332,15 @@ def create_tsgrism_wavelengthrange(outname="nircam_tsgrism_wavelengthrange.asdf"
 
     history = HistoryEntry({'description': history,
                             'time': datetime.datetime.utcnow()})
-    software = Software({'name': 'nircam_reftools.py',
+    software = Software({'name': 'wfc3_reftools.py',
                          'author': author,
-                         'homepage': 'https://github.com/spacetelescope/jwreftools',
-                         'version': '0.7.1'})
+                         'homepage': 'https://github.com/spacetelescope/astrogrism_sandbox',
+                         'version': '0.0.0'})
     history['software'] = software
     ref.history = [history]
     ref.validate()
     ref.to_asdf(outname)
+
 
 
 def create_wfss_wavelengthrange(outname="nircam_wfss_wavelengthrange.asdf",
