@@ -147,9 +147,9 @@ class WFC3IRBackwardGrismDispersion(Model):
         Parameters
         ----------
         x : float
-            input x pixel
+            input x pixel on the direct image
         y : float
-            intput y pixel
+            intput y pixel on the direct image
         wavelength : float
             input wavelength in angstroms
         order : int
@@ -163,14 +163,18 @@ class WFC3IRBackwardGrismDispersion(Model):
         if (wavelength < 0).any():
             raise ValueError("wavelength should be greater than zero")
 
+        # These should be dispx and dispy from the reference file
         xmodel = self.xmodels[iorder]
         ymodel = self.ymodels[iorder]
+        # lmodel should be invdispl from the reference file
         lmodel = self.lmodels[iorder]
 
-        dx = lmodel | xmodel
-        dy = lmodel | ymodel
-        model = Mapping((0, 2, 1, 2, 0, 1, 3)) | \
-              ((Identity(1) & dx) | astmath.AddUfunc())  & \
-              ((Identity(1) & dy) | astmath.AddUfunc()) & Identity(3)
+        # Convert lambda to t, then use that to get dx and dy to add to the
+        # input coordinates to get the dispersed coordinates
+        model = (Identity(2) * lmodel * Identity(1)) | \
+                Mapping((0, 1, 2, 0, 1, 2, 0, 1, 3)) | \
+                xmodel & ymodel & Identity(3) | \
+                Mapping((0, 2, 1, 3, 2, 3, 4)) | \
+                astmath.AddUfunc() & astmath.AddUfunc() & Identity(3)
 
         return model(x, y, wavelength, order)
