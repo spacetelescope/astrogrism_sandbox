@@ -114,7 +114,7 @@ class WFC3IRForwardGrismDispersion(Model):
 
         dxr = astmath.SubtractUfunc()
         wavelength = dxr | tab | lmodel
-        model = Mapping((2, 3, 0, 2, 4)) | Const1D(x00) & Const1D(y00) & wavelength & Const1D(order)
+        model = Mapping((2, 3, 0, 2, 4)) | Const1D(x0) & Const1D(y0) & wavelength & Const1D(order)
         return model(x, y, x0, y0, order)
 
 
@@ -194,8 +194,9 @@ class WFC3IRBackwardGrismDispersion(Model):
         usu. taken to be the different between fwcpos_ref in the specwcs
         reference file and fwcpos from the input image.
         """
-        if (wavelength < 0).any():
+        if wavelength < 0:
             raise ValueError("Wavelength should be greater than zero")
+
         try:
             iorder = self._order_mapping[int(order.flatten()[0])]
         except AttributeError:
@@ -207,8 +208,8 @@ class WFC3IRBackwardGrismDispersion(Model):
         xmodel = self.xmodels[iorder]
         ymodel = self.ymodels[iorder]
 
-        dx = xmodel(x, y, t)
-        dy = ymodel(x, y, t)
+        dx = xmodel.evaluate(x, y, t)
+        dy = ymodel.evaluate(x, y, t)
 
         ## rotate by theta
         if self.theta != 0.0:
