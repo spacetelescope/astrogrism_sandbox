@@ -104,7 +104,6 @@ class WFC3IRForwardGrismDispersion(Model):
         dx = xmodel.evaluate(x0, y0, t)
         dy = ymodel.evaluate(x0, y0, t)
 
-
         if self.theta != 0.0:
             rotate = Rotation2D(self.theta)
             dx, dy = rotate(dx, dy)
