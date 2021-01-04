@@ -12,10 +12,12 @@ class DISPXY_Model(Model):
     def __init__(self, ematrix, offset, inv=False):
         self.ematrix = np.array(ematrix)
         self.inv = inv
+        self.offset = offset
 
     # Note that in the inverse case, input "t" here is actually dx or dy
     def evaluate(self, x, y, t):
         e = self.ematrix
+        offset = self.offset
         coeffs = np.array([1, x, y, x**2, x*y, y**2])
         if self.inv:
             return (t + offset - np.dot(coeffs, e[0,:]))/np.dot(coeffs, e[1,:])
