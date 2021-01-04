@@ -62,7 +62,7 @@ class WFC3IRForwardGrismDispersion(Model):
         self.outputs = ("x", "y", "wavelength", "order")
 
     def evaluate(self, x, y, x0, y0, order):
-        """Return the valid pixel(s) and wavelengths given center x,y and lam
+        """Return the valid pixel(s) and wavelengths given x0, y0, x, y, order
         Parameters
         ----------
         x0: int,float,list
@@ -75,14 +75,19 @@ class WFC3IRForwardGrismDispersion(Model):
             Input y location
         order : int
             Spectral order to use
+
         Returns
         -------
-        x, y, lambda, order, theta,  in the direct image for the pixel that was
+        x0, y0, lambda, order in the direct image for the pixel that was
         specified as input using the wavelength l and spectral order
+
         Notes
         -----
-        There's spatial dependence for NIRISS as well as dependence on the
-        filter wheel rotation during the exposure.
+        I kept the possibility of having a rotation like NIRISS, although I
+        don't know if there is a use case for it for WFC3.
+
+        The two `flatten` lines may need to be uncommented if we want to use
+        this for array input.
         """
         try:
             iorder = self._order_mapping[int(order.flatten()[0])]
@@ -119,7 +124,7 @@ class WFC3IRForwardGrismDispersion(Model):
 
 
 class WFC3IRBackwardGrismDispersion(Model):
-    """Return the valid pixel(s) and wavelengths given center x,y and lam
+    """Return the dispersed pixel(s) given center x, y, lambda, and order
 
     Parameters
     ----------
@@ -136,7 +141,7 @@ class WFC3IRBackwardGrismDispersion(Model):
 
     Returns
     -------
-    x, y, lam, order in the grism image for the pixel at x0,y0 that was
+    x, y, x0, y0, order in the grism image for the pixel at x0,y0 that was
     specified as input using the wavelength l for the specified order
 
     Notes
@@ -169,25 +174,28 @@ class WFC3IRBackwardGrismDispersion(Model):
         self.outputs = ("x", "y", "x0", "y0", "order")
 
     def evaluate(self, x, y, wavelength, order):
-        """Return the valid pixel(s) and wavelengths given center x,y and lam
+        """Return the dispersed pixel(s) given center x, y, lam and order
         Parameters
         ----------
-        wavelength : int,float
-            Input wavelength you want to know about, will be converted to float
         x :  int,float
-            Input x location
+            Input x location on the direct image
         y :  int,float
-            Input y location
+            Input y location on the direct image
         wavelength : float
             Wavelength to disperse
         order : list
             The order to use
+
         Returns
         -------
-        x, y, wavelength, order in the grism image for the pixel at x,y that was
+        x, y in the grism image for the pixel at x0, y0 that was
         specified as input using the wavelength and order specified
+
         Notes
         -----
+        I kept the potential for rotation from NIRISS, unsure if it's actually
+        needed/useful for WFC3. Original note:
+
         There's spatial dependence for NIRISS so the forward transform
         dependes on x,y as well as the filter wheel rotation. Theta is
         usu. taken to be the different between fwcpos_ref in the specwcs
