@@ -9,9 +9,9 @@ from astropy import units as u
 from astropy.modeling.models import Polynomial1D
 
 #from jwst.datamodels import NIRCAMGrismModel
-from wcs_ref_model import WFC3IRGrismModel
+from .wcs_ref_model import WFC3IRGrismModel
 from jwst.datamodels import wcs_ref_models
-from dispersion_models import DISPXY_Model, DISPXY_Extension
+from .dispersion_models import DISPXY_Model, DISPXY_Extension
 
 def common_reference_file_keywords(reftype=None,
                                    title=None,
