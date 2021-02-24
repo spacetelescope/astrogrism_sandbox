@@ -77,7 +77,7 @@ def v2v3_model(from_sys, to_sys, par, angle):
     return xmodel, ymodel
 
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py#L37
-def create_nircam_distortion(detector, outname, sci_pupil,
+def create_wfc3_distortion(detector, outname, sci_pupil,
                              sci_subarr, sci_exptype, history_entry, filter):
     """
     Create an asdf reference file with all distortion components for the NIRCam imager.
@@ -259,5 +259,5 @@ exp_type = pupil
 hist = "A Random Description"
 filter = 'F105W'
 #ref.create_nircam_distortion(detector, apname, outname, pupil, subarr, exp_type, hist)
-create_nircam_distortion(detector, outname, pupil, subarr, exp_type, hist, filter)
+create_wfc3_distortion(detector, outname, pupil, subarr, exp_type, hist, filter)
 
