@@ -249,6 +249,7 @@ def create_nircam_distortion(detector, outname, sci_pupil,
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/make_all_imaging_distortion_reffiles_from_pysiaf.py#L49
 import os
 
+detector = 'WFC3IR'
 #apname = 'FULL'
 outname = '{}_distortion.asdf'.format(detector)# + '_' + apname)
 pupil = ['NRC_IMAGE', 'NRC_TSIMAGE', 'NRC_FLAT', 'NRC_LED',
