@@ -249,8 +249,7 @@ def create_nircam_distortion(detector, aperture, outname, sci_pupil,
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/make_all_imaging_distortion_reffiles_from_pysiaf.py#L49
 import os
 
-detector = 'NRCA1'
-apname = 'FULL'
+#apname = 'FULL'
 outname = '{}_distortion.asdf'.format(detector + '_' + apname)
 pupil = ['NRC_IMAGE', 'NRC_TSIMAGE', 'NRC_FLAT', 'NRC_LED',
          'NRC_WFSC', 'NRC_TACQ', 'NRC_TACONFIRM', 'NRC_FOCUS',
@@ -260,5 +259,5 @@ exp_type = pupil
 hist = "A Random Description"
 filter = 'F105W'
 #ref.create_nircam_distortion(detector, apname, outname, pupil, subarr, exp_type, hist)
-create_nircam_distortion(detector, apname, outname, pupil, subarr, exp_type, hist, filter)
+create_nircam_distortion(detector, outname, pupil, subarr, exp_type, hist, filter)
 
