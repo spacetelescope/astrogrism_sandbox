@@ -106,11 +106,10 @@ def create_nircam_distortion(detector, aperture, outname, sci_pupil,
     degree = 4  # WFC3 Distortion is fourth degree
     
     # From Bryan Hilbert:
-    # The parity term is just an indicator of the relationship between the detector y axis and the “science” y axis.
-    #A parity of -1 means that the y axes of the two systems run in opposite directions... A value of 1 indicates no flip.
-    
+    #   The parity term is just an indicator of the relationship between the detector y axis and the “science” y axis.
+    #   A parity of -1 means that the y axes of the two systems run in opposite directions... A value of 1 indicates no flip.
     # From Colin Cox:
-    # ... for WFC3 it is always -1 so maybe people gave up mentioning it.
+    #   ... for WFC3 it is always -1 so maybe people gave up mentioning it.
     parity = -1
     
     #full_aperture = detector + '_' + aperture
@@ -142,6 +141,7 @@ def create_nircam_distortion(detector, aperture, outname, sci_pupil,
     '''
 
     # Now create a compound model for each with the appropriate inverse
+    # Inverse polynomials were removed in favor of using GWCS' numerical inverse capabilities
     sci2idl = Mapping([0, 1, 0, 1]) | sci2idlx & sci2idly
     #sci2idl.inverse = Mapping([0, 1, 0, 1]) | idl2scix & idl2sciy
 
