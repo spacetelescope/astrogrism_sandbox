@@ -247,7 +247,6 @@ def create_nircam_distortion(detector, outname, sci_pupil,
 # SW = "Short wavelength", lw = "Long Wavelength"
 
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/make_all_imaging_distortion_reffiles_from_pysiaf.py#L49
-import os
 
 detector = 'WFC3IR'
 #apname = 'FULL'
