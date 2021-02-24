@@ -242,12 +242,10 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     d.save(outname)
     print("Output saved to {}".format(outname))
 
-
+'''
 # Sample Invocation
+# https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/make_all_imaging_distortion_reffiles_from_pysiaf.py#L49
 # SW = "Short wavelength", lw = "Long Wavelength"
-
-#https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/make_all_imaging_distortion_reffiles_from_pysiaf.py#L49
-
 detector = 'WFC3IR'
 #apname = 'FULL'
 outname = '{}_distortion.asdf'.format(detector)# + '_' + apname)
@@ -260,4 +258,4 @@ hist = "A Random Description"
 filter = 'F105W'
 #ref.create_nircam_distortion(detector, apname, outname, pupil, subarr, exp_type, hist)
 create_wfc3_distortion(detector, outname, pupil, subarr, exp_type, hist, filter)
-
+'''
