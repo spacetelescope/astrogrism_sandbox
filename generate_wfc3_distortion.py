@@ -77,7 +77,7 @@ def v2v3_model(from_sys, to_sys, par, angle):
     return xmodel, ymodel
 
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py#L37
-def create_nircam_distortion(detector, aperture, outname, sci_pupil,
+def create_nircam_distortion(detector, outname, sci_pupil,
                              sci_subarr, sci_exptype, history_entry, filter):
     """
     Create an asdf reference file with all distortion components for the NIRCam imager.
@@ -250,7 +250,7 @@ def create_nircam_distortion(detector, aperture, outname, sci_pupil,
 import os
 
 #apname = 'FULL'
-outname = '{}_distortion.asdf'.format(detector + '_' + apname)
+outname = '{}_distortion.asdf'.format(detector)# + '_' + apname)
 pupil = ['NRC_IMAGE', 'NRC_TSIMAGE', 'NRC_FLAT', 'NRC_LED',
          'NRC_WFSC', 'NRC_TACQ', 'NRC_TACONFIRM', 'NRC_FOCUS',
          'NRC_DARK', 'NRC_WFSS', 'NRC_TSGRISM', 'NRC_GRISM']
