@@ -1,9 +1,9 @@
-# To add a new cell, type '# %%'
-# To add a new markdown cell, type '# %% [markdown]'
-# %% [markdown]
-# The distortion reference file is much more complex than previous reference files we've had to convert. In an attempt to determine what information is required to gather from our Product Owner/external Subject Matter Experts, I'll attempt to break down the following code into its individual components, most derived from pysiaf
+# The distortion reference file is much more complex than previous reference
+# files we've had to convert. In an attempt to determine what information
+# is required to gather from our Product Owner/external Subject Matter Experts,
+# I'll attempt to break down the following code into its individual components,
+# most derived from pysiaf
 
-# %%
 from asdf import AsdfFile
 from astropy.modeling.models import Polynomial2D, Mapping, Shift
 import astropy.units as u
@@ -17,10 +17,6 @@ from stdatamodels import util
 
 #import read_siaf_table
 
-# %% [markdown]
-# ## Convenience methods
-
-# %%
 def get_distortion_coeffs(degree, filter_info):
     """Retrieve the requested set of distortion coefficients from Siaf
     and package into a dictionary
@@ -48,8 +44,6 @@ def get_distortion_coeffs(degree, filter_info):
             y_coeffs[key] = filter_info[ycolname]
     return x_coeffs, y_coeffs
 
-
-# %%
 def v2v3_model(from_sys, to_sys, par, angle):
     """
     Creates an astropy.modeling.Model object
@@ -82,12 +76,7 @@ def v2v3_model(from_sys, to_sys, par, angle):
 
     return xmodel, ymodel
 
-# %% [markdown]
-# ## Distortion Reference File Generator
-
-# %%
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py#L37
-
 def create_nircam_distortion(detector, aperture, outname, sci_pupil,
                              sci_subarr, sci_exptype, history_entry, filter):
     """
@@ -253,15 +242,11 @@ def create_nircam_distortion(detector, aperture, outname, sci_pupil,
     d.save(outname)
     print("Output saved to {}".format(outname))
 
-# %% [markdown]
-# ## Sample Invocation
 
-# %%
+# Sample Invocation
 # SW = "Short wavelength", lw = "Long Wavelength"
 
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/make_all_imaging_distortion_reffiles_from_pysiaf.py#L49
-#import nircam_distortion_reffiles_from_pysiaf as ref
-#import numpy as np
 import os
 
 detector = 'NRCA1'
