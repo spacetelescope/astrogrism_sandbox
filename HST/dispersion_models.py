@@ -26,7 +26,7 @@ class DISPXY_Model(Model):
 
 class DISPXY_ModelConverter(Converter):
     tags = ["tag:stsci.edu:grismstuff/dispxy_model-*"]
-    types = ["dispersion_models.DISPXY_Model"]
+    types = [DISPXY_Model]
 
     def to_yaml_tree(self, obj, tags, ctx):
         # ASDF will know how to turn the nested lists into yaml properly
