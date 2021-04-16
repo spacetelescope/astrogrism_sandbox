@@ -6,13 +6,18 @@ import asdf
 from dispersion_models import DISPXY_Model, DISPXY_Extension
 from transform_models import WFC3IRForwardGrismDispersion, WFC3IRBackwardGrismDispersion
 
-def extract_2d_spectrum(data, ll_x, ll_y, ur_x, ur_y, ll_l = 1.0,
-                      ur_l = 3.0, order = 1, specwcs_ref = "wfc3_ir_specwcs.asdf"):
+def extract_2d_spectrum(data, ll_x, ll_y, ur_x, ur_y, ll_l = 1.1,
+                      ur_l = 1.7, order = 1, specwcs_ref = "wfc3_ir_specwcs.asdf"):
     """
     Function to do a simple box cutout around a 2D spectrum.
 
     The input lower and upper x and y bounds are pixel coordinates from the
     direct image. The upper and lower wavelength bounds are in microns.
+
+    TODO: Change this to take grism as input instead of lower and upper wavelengths
+    and specwcs reference file, with default wavelength range based on grism.
+    Currently assumes the G141 reference file and wavelength ranged that I've been
+    working with.
     """
     asdf.get_config().add_extension(DISPXY_Extension())
     specwcs = asdf.open(specwcs_ref).tree
