@@ -101,17 +101,17 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     fn = download_file('https://hst-crds.stsci.edu/unchecked_get/references/hst/w3m18525i_idc.fits', cache=True)
     wfc3_distortion_file = fits.open(fn)
     wfc3_filter_info = wfc3_distortion_file[1].data[list(wfc3_distortion_file[1].data['FILTER']).index(filter)]
-    
-    
+
+
     degree = 4  # WFC3 Distortion is fourth degree
-    
+
     # From Bryan Hilbert:
     #   The parity term is just an indicator of the relationship between the detector y axis and the “science” y axis.
     #   A parity of -1 means that the y axes of the two systems run in opposite directions... A value of 1 indicates no flip.
     # From Colin Cox:
     #   ... for WFC3 it is always -1 so maybe people gave up mentioning it.
     parity = -1
-    
+
     #full_aperture = detector + '_' + aperture
 
     # Get Siaf instance for detector/aperture
@@ -156,7 +156,7 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     # Nadia said that this shift should be present in the
     # distortion reference file.
 
-    core_model = sci2idl# | idl2v2v3
+    core_model = sci2idl | idl2v2v3
 
     # Now add in the shifts to create the full model
     # including the shift to go from 0-indexed python coords to
@@ -165,12 +165,12 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     # Find the distance between (0,0) and the reference location
     xshift = Shift(wfc3_filter_info['XREF'])
     yshift = Shift(wfc3_filter_info['YREF'])
-    
+
     # Finally, we need to shift by the v2,v3 value of the reference
     # location in order to get to absolute v2,v3 coordinates
     v2shift = Shift(wfc3_filter_info['V2REF'])
     v3shift = Shift(wfc3_filter_info['V3REF'])
-    
+
     # SIAF coords
     index_shift = Shift(1)
     model = index_shift & index_shift | xshift & yshift | core_model | v2shift & v3shift
@@ -206,13 +206,13 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     d.meta.title = "WFC3 Distortion"
     d.meta.instrument.name = "WFC3"
     d.meta.instrument.module = detector[-2]
-    
+
     numdet = detector[-1]
     d.meta.instrument.channel = "LONG" if numdet == '5' else "SHORT"
     # In the reference file headers, we need to switch NRCA5 to
     # NRCALONG, and same for module B.
     d.meta.instrument.detector = (detector[0:4] + 'LONG') if numdet == 5 else detector
-    
+
     d.meta.telescope = 'HST'
     d.meta.subarray.name = 'FULL'
     d.meta.pedigree = 'GROUND'
