@@ -5,6 +5,7 @@
 # most derived from pysiaf
 
 from asdf import AsdfFile
+from astropy.io.fits import hdu
 from astropy.modeling.models import Polynomial2D, Mapping, Shift
 import astropy.units as u
 from astropy.io import fits
@@ -43,6 +44,65 @@ def get_distortion_coeffs(degree, filter_info):
             x_coeffs[key] = filter_info[xcolname]
             y_coeffs[key] = filter_info[ycolname]
     return x_coeffs, y_coeffs
+
+def get_SIP_Model():
+    """Constructs the SIP Distortion Astropy Model using the coefficients file
+    provided by Russell Ryan
+    Paramters
+    ---------
+    Returns
+    -------
+    SIP_model : astropy.modeling.models.SIP
+        An Astropy SIP model encoding instrument distortion
+    """
+    hduIRHeader = fits.open("hst_wfc3_ir_fov.fits")['IR'].header
+    degree = hduIRHeader['AP_ORDER']
+    if degree != hduIRHeader['BP_ORDER']:
+        raise ValueError("AP and BP orders not equal!")
+
+    import re
+
+    # Create dictionaries of distortion coefficients
+    coeffs = {
+        'A': {
+            'pattern': re.compile("A_\d_\d"),
+            'matching_coeffs': dict()
+        },
+        'B':{
+            'pattern': re.compile("B_\d_\d"),
+            'matching_coeffs': dict()
+        },
+        'AP': {
+            'pattern': re.compile("AP_\d_\d"),
+            'matching_coeffs': dict()
+        },
+        'BP': {
+            'pattern': re.compile("AB_\d_\d"),
+            'matching_coeffs': dict()
+        }        
+    }
+
+    for key in hduIRHeader:
+        for coeff in coeffs.values():
+            if coeff['pattern'].match(key):
+                coeff['matching_coeffs'][key] = hduIRHeader[key]
+    
+    from astropy.modeling.models import SIP
+    SIP_model = SIP(crpix=[
+                    hduIRHeader['CRPIX1'],
+                    hduIRHeader['CRPIX2']
+                ],
+                a_order=hduIRHeader['A_ORDER'],
+                a_coeff=coeffs['A']['matching_coeffs'],
+                b_order=hduIRHeader['B_ORDER'],
+                b_coeff=coeffs['B']['matching_coeffs'],
+                ap_order=hduIRHeader['AP_ORDER'],
+                ap_coeff=coeffs['AP']['matching_coeffs'],
+                bp_order=hduIRHeader['BP_ORDER'],
+                bp_coeff=coeffs['BP']['matching_coeffs']
+
+    )
+    return SIP_model
 
 def v2v3_model(from_sys, to_sys, par, angle):
     """
