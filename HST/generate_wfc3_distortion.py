@@ -138,7 +138,7 @@ def v2v3_model(from_sys, to_sys, par, angle):
 
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py#L37
 def create_wfc3_distortion(detector, outname, sci_pupil,
-                             sci_subarr, sci_exptype, history_entry, filter):
+                             sci_subarr, sci_exptype, history_entry, filter, save_to_asdf=False):
     """
     Create an asdf reference file with all distortion components for the NIRCam imager.
     NOTE: The IDT has not provided any distortion information. The files are constructed
@@ -242,65 +242,68 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     d = DistortionModel(model=model, input_units=u.pix,
                         output_units=u.arcsec)
 
-    #Populate metadata
+    if save_to_asdf:
+        #Populate metadata
 
-    # Keyword values in science data to which this file should
-    # be applied
-    p_pupil = ''
-    for p in sci_pupil:
-        p_pupil = p_pupil + p + '|'
+        # Keyword values in science data to which this file should
+        # be applied
+        p_pupil = ''
+        for p in sci_pupil:
+            p_pupil = p_pupil + p + '|'
 
-    p_subarr = ''
-    for p in sci_subarr:
-        p_subarr = p_subarr + p + '|'
+        p_subarr = ''
+        for p in sci_subarr:
+            p_subarr = p_subarr + p + '|'
 
-    p_exptype = ''
-    for p in sci_exptype:
-        p_exptype = p_exptype + p + '|'
+        p_exptype = ''
+        for p in sci_exptype:
+            p_exptype = p_exptype + p + '|'
 
-    d.meta.instrument.p_pupil = p_pupil
-    d.meta.subarray.p_subarray = p_subarr
-    d.meta.exposure.p_exptype = p_exptype
+        d.meta.instrument.p_pupil = p_pupil
+        d.meta.subarray.p_subarray = p_subarr
+        d.meta.exposure.p_exptype = p_exptype
 
-    # metadata describing the reference file itself
-    d.meta.title = "WFC3 Distortion"
-    d.meta.instrument.name = "WFC3"
-    d.meta.instrument.module = detector[-2]
-    
-    numdet = detector[-1]
-    d.meta.instrument.channel = "LONG" if numdet == '5' else "SHORT"
-    # In the reference file headers, we need to switch NRCA5 to
-    # NRCALONG, and same for module B.
-    d.meta.instrument.detector = (detector[0:4] + 'LONG') if numdet == 5 else detector
-    
-    d.meta.telescope = 'HST'
-    d.meta.subarray.name = 'FULL'
-    d.meta.pedigree = 'GROUND'
-    d.meta.reftype = 'DISTORTION'
-    d.meta.author = 'D. Nguyen'
-    d.meta.litref = "https://github.com/spacetelescope/jwreftools"
-    d.meta.description = "Distortion model from SIAF coefficients in pysiaf version 0.6.1"
-    #d.meta.exp_type = exp_type
-    d.meta.useafter = "2014-10-01T00:00:00"
+        # metadata describing the reference file itself
+        d.meta.title = "WFC3 Distortion"
+        d.meta.instrument.name = "WFC3"
+        d.meta.instrument.module = detector[-2]
+        
+        numdet = detector[-1]
+        d.meta.instrument.channel = "LONG" if numdet == '5' else "SHORT"
+        # In the reference file headers, we need to switch NRCA5 to
+        # NRCALONG, and same for module B.
+        d.meta.instrument.detector = (detector[0:4] + 'LONG') if numdet == 5 else detector
+        
+        d.meta.telescope = 'HST'
+        d.meta.subarray.name = 'FULL'
+        d.meta.pedigree = 'GROUND'
+        d.meta.reftype = 'DISTORTION'
+        d.meta.author = 'D. Nguyen'
+        d.meta.litref = "https://github.com/spacetelescope/jwreftools"
+        d.meta.description = "Distortion model from SIAF coefficients in pysiaf version 0.6.1"
+        d.meta.exp_type = exp_type
+        d.meta.useafter = "2014-10-01T00:00:00"
 
-    # To be ready for the future where we will have filter-dependent solutions
-    d.meta.instrument.filter = 'N/A'
+        # To be ready for the future where we will have filter-dependent solutions
+        d.meta.instrument.filter = 'N/A'
 
-    # Create initial HISTORY ENTRY
-    sdict = {'name': 'nircam_distortion_reffiles_from_pysiaf.py',
-             'author': 'B.Hilbert',
-             'homepage': 'https://github.com/spacetelescope/jwreftools',
-             'version': '0.8'}
+        # Create initial HISTORY ENTRY
+        sdict = {'name': 'nircam_distortion_reffiles_from_pysiaf.py',
+                'author': 'B.Hilbert',
+                'homepage': 'https://github.com/spacetelescope/jwreftools',
+                'version': '0.8'}
 
-    entry = util.create_history_entry(history_entry, software=sdict)
-    d.history = [entry]
+        entry = util.create_history_entry(history_entry, software=sdict)
+        d.history = [entry]
 
-    #Create additional HISTORY entries
-    #entry2 = util.create_history_entry(history_2)
-    #d.history.append(entry2)
+        #Create additional HISTORY entries
+        #entry2 = util.create_history_entry(history_2)
+        #d.history.append(entry2)
 
-    d.save(outname)
-    print("Output saved to {}".format(outname))
+        d.save(outname)
+        print("Output saved to {}".format(outname))
+    else:
+        return d
 
 '''
 # Sample Invocation
