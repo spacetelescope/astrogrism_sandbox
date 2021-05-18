@@ -217,7 +217,7 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     # Nadia said that this shift should be present in the
     # distortion reference file.
 
-    core_model = sci2idl# | idl2v2v3
+    core_model = sci2idl | idl2v2v3
 
     # Now add in the shifts to create the full model
     # including the shift to go from 0-indexed python coords to
