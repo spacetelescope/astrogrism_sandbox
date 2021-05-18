@@ -202,7 +202,8 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
 
     # Now create a compound model for each with the appropriate inverse
     # Inverse polynomials were removed in favor of using GWCS' numerical inverse capabilities
-    sci2idl = Mapping([0, 1, 0, 1]) | sci2idlx & sci2idly
+    #sci2idl = Mapping([0, 1, 0, 1]) | sci2idlx & sci2idly
+    sci2idl = get_SIP_Model()
     #sci2idl.inverse = Mapping([0, 1, 0, 1]) | idl2scix & idl2sciy
 
     idl2v2v3 = Mapping([0, 1, 0, 1]) | idl2v2v3x & idl2v2v3y
