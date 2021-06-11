@@ -16,6 +16,7 @@ import pysiaf
 from stdatamodels import util
 
 #import read_siaf_table
+'''
 def get_distortion_coeffs(degree, filter_info):
     """Retrieve the requested set of distortion coefficients from Siaf
     and package into a dictionary
@@ -42,12 +43,15 @@ def get_distortion_coeffs(degree, filter_info):
             x_coeffs[key] = filter_info[xcolname]
             y_coeffs[key] = filter_info[ycolname]
     return x_coeffs, y_coeffs
-
 '''
+
+
 def get_distortion_coeffs(degree, filter_info):
     """Do this with the grism file header input instead"""
-    x_coeffs = {}
-    y_coeffs = {}
+    a_coeffs = {}
+    b_coeffs = {}
+    ap_coeffs = {}
+    bp_coeffs = {}
 
     for key in filter_info:
         if key[0:2] == "A_" or key[0:2] == "B_":
@@ -56,11 +60,12 @@ def get_distortion_coeffs(degree, filter_info):
             split_key = key.split("_")
             new_key = "c{}_{}".format(split_key[1], split_key[2])
             if split_key[0] == "A":
-                x_coeffs[new_key] = filter_info[key]
+                a_coeffs[new_key] = filter_info[key]
             elif split_key[0] == "B":
-                y_coeffs[new_key] = filter_info[key]
-    return x_coeffs, y_coeffs
-'''
+                b_coeffs[new_key] = filter_info[key]
+
+
+    return a_coeffs, b_coeffs
 
 
 def v2v3_model(from_sys, to_sys, par, angle):
@@ -94,6 +99,7 @@ def v2v3_model(from_sys, to_sys, par, angle):
     ymodel = Polynomial2D(1, **yc)
 
     return xmodel, ymodel
+
 
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py#L37
 def create_wfc3_distortion(detector, outname, sci_pupil,
@@ -143,17 +149,17 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
                                     'HST/test_data/ib6o23rsq_flt.fits')
     distortion_info = grism_image_hdulist['SCI'].header
     # With IDCTAB file
-    xcoeffs, ycoeffs = get_distortion_coeffs(degree, wfc3_filter_info)
+    #xcoeffs, ycoeffs = get_distortion_coeffs(degree, wfc3_filter_info)
     # With SIP coefficients from the FITS header
-    #xcoeffs, ycoeffs = get_distortion_coeffs(degree, distortion_info)
+    xcoeffs, ycoeffs = get_distortion_coeffs(degree, distortion_info)
 
     sci2idlx = Polynomial2D(degree, **xcoeffs)
     sci2idly = Polynomial2D(degree, **ycoeffs)
 
     # Get info for ideal -> v2v3 or v2v3 -> ideal model
-    idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(wfc3_distortion_file[1].data[wfc3_distortion_file[1].data['FILTER'] == filter]['THETA'][0]))
+    #idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(wfc3_distortion_file[1].data[wfc3_distortion_file[1].data['FILTER'] == filter]['THETA'][0]))
 
-    #idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(distortion_info["IDCTHETA"]))
+    idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(distortion_info["IDCTHETA"]))
 
     '''
     # *****************************************************
