@@ -68,6 +68,15 @@ class GrismObs():
 
     def _build_geometric_transforms(self):
 
+        """
+        Build transform pipeline under the hood so the user doesn't need
+        to worry about it.
+
+        TODO:
+        - Try to get SIP coefficients from grism observation header before
+        resorting to premade file
+        """
+
         # Register custom asdf extension
         asdf.get_config().add_extension(DISPXY_Extension())
 
@@ -118,6 +127,17 @@ class GrismObs():
         a_order = acoef.pop('A_ORDER')
         bcoef = dict(sip_hdus[1].header['B_*'])
         b_order = bcoef.pop('B_ORDER')
+
+        # Get the inverse SIP polynomial coefficients from file
+        apcoef = dict(sip_hdus[1].header['AP_*'])
+        bpcoef = dict(sip_hdus[1].header['BP_*'])
+
+        try:
+            ap_order = apcoef.pop('AP_ORDER')
+            bp_order = bpcoef.pop('BP_ORDER')
+        except ValueError:
+            raise
+
         crpix = [sip_hdus[1].header['CRPIX1'], sip_hdus[1].header['CRPIX2']]
 
         crval = [self.grism_image[1].header['CRVAL1'],
@@ -126,28 +146,47 @@ class GrismObs():
         cdmat = np.array([[sip_hdus[1].header['CD1_1'], sip_hdus[1].header['CD1_2']],
                   [sip_hdus[1].header['CD2_1'], sip_hdus[1].header['CD2_2']]])
 
-        apcoef = {}
+        a_polycoef = {}
         for key in acoef:
-            apcoef['c' + key.split('A_')[1]] = acoef[key]
+            a_polycoef['c' + key.split('A_')[1]] = acoef[key]
 
-        bpcoef = {}
+        b_polycoef = {}
         for key in bcoef:
-            bpcoef['c' + key.split('B_')[1]] = bcoef[key]
+            b_polycoef['c' + key.split('B_')[1]] = bcoef[key]
 
-        a_poly = models.Polynomial2D(a_order, **apcoef)
-        b_poly = models.Polynomial2D(b_order, **bpcoef)
+        ap_polycoef = {}
+        for key in apcoef:
+            ap_polycoef['c' + key.split('AP_')[1]] = apcoef[key]
+
+        bp_polycoef = {}
+        for key in bpcoef:
+             bp_polycoef['c' + key.split('BP_')[1]] = bpcoef[key]
+
+        a_poly = models.Polynomial2D(a_order, **a_polycoef)
+        b_poly = models.Polynomial2D(b_order, **b_polycoef)
+        ap_poly = models.Polynomial2D(ap_order, **ap_polycoef)
+        bp_poly = models.Polynomial2D(bp_order, **bp_polycoef)
 
         # See SIP definition paper for definition of u, v, f, g
-        mr = (models.Shift(-(crpix[0]-1)) & models.Shift(-(crpix[1]-1)) | # Calculate u and v
+        SIP_forward = (models.Shift(-(crpix[0]-1)) & models.Shift(-(crpix[1]-1)) | # Calculate u and v
              models.Mapping((0, 1, 0, 1, 0, 1)) | a_poly & b_poly & models.Identity(2) |
              models.Mapping((0, 2, 1, 3)) | models.math.AddUfunc() & models.math.AddUfunc() |
              models.AffineTransformation2D(matrix=cdmat) | models.Pix2Sky_TAN() |
              models.RotateNative2Celestial(crval[0], crval[1], 180))
 
+        SIP_backward = (models.RotateCelestial2Native(crval[0], crval[1], 180) |
+            models.Sky2Pix_TAN() | models.AffineTransformation2D(matrix=cdmat).inverse |
+            models.Mapping((0, 1, 0, 1, 0, 1)) | ap_poly & bp_poly & models.Identity(2) |
+            models.Mapping((0, 2, 1, 3)) | models.math.AddUfunc() & models.math.AddUfunc() |
+            models.Shift((crpix[0]-1)) & models.Shift((crpix[1]-1)))
+
+        full_distortion_model = SIP_forward & models.Identity(2)
+        full_distortion_model.inverse = SIP_backward & models.Identity(2)
+
         imagepipe = []
 
         det_frame = cf.Frame2D(name="detector")
-        imagepipe.append((det_frame, mr & models.Identity(2)))
+        imagepipe.append((det_frame, full_distortion_model))
 
         world_frame = cf.CelestialFrame(name="world", unit = (u.Unit("deg"), u.Unit("deg")),
                              axes_names=('lon', 'lat'), axes_order=(0, 1),
