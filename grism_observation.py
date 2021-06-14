@@ -73,8 +73,19 @@ class GrismObs():
 
         # Get paths to premade configuration files
         config_dir = "{}/config/{}/".format(pkg_dir, self.telescope)
-        sip_file = "{}/WFC3_IR_distortion.fits".format(config_dir)
-        spec_wcs_file = "{}/WFC3_G141_specwcs.asdf".format(config_dir)
+
+        if self.telescope == "HST":
+            if self.filter in ("G102", "G141"):
+                instrument = self.instrument + "_IR"
+            elif self.filter == "G280":
+                instrument = self.instrument + "_UV"
+        else:
+            instrument = self.instrument
+        sip_file = "{}/{}_distortion.fits".format(config_dir,
+                                                  instrument)
+        spec_wcs_file = "{}/{}_{}_specwcs.asdf".format(config_dir,
+                                                       self.instrument,
+                                                       self.filter)
 
         # Build the grism_detector <-> detector transforms
         specwcs = asdf.open(spec_wcs_file).tree
