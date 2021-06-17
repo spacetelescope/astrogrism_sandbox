@@ -123,9 +123,15 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     """
     # Download WFC3 Image Distortion File
     from astropy.utils.data import download_file
-    fn = download_file('https://hst-crds.stsci.edu/unchecked_get/references/hst/w3m18525i_idc.fits', cache=True)
-    wfc3_distortion_file = fits.open(fn)
-    wfc3_filter_info = wfc3_distortion_file[1].data[list(wfc3_distortion_file[1].data['FILTER']).index(filter)]
+    # IDC Coefficient File
+    #fn = download_file('https://hst-crds.stsci.edu/unchecked_get/references/hst/w3m18525i_idc.fits', cache=True)
+    #wfc3_distortion_file = fits.open(fn)
+    #wfc3_filter_info = wfc3_distortion_file[1].data[list(wfc3_distortion_file[1].data['FILTER']).index(filter)]
+
+    # Raw FLT Grism image file with encoded SIP Distortion Coeffients
+    fn = download_file('https://github.com/npirzkal/aXe_WFC3_Cookbook/raw/main/cookbook_data/G141/ib6o23rsq_flt.fits', cache=True)
+    grism_image_hdulist = fits.open(fn)
+    distortion_info = grism_image_hdulist['SCI'].header
 
     degree = 4  # WFC3 Distortion is fourth degree
 
@@ -145,9 +151,6 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     # *****************************************************
     # "Forward' transformations. science --> ideal --> V2V3
 
-    grism_image_hdulist = fits.open('/Users/rosteen/projects/astrogrism_sandbox/'
-                                    'HST/test_data/ib6o23rsq_flt.fits')
-    distortion_info = grism_image_hdulist['SCI'].header
     # With IDCTAB file
     #xcoeffs, ycoeffs = get_distortion_coeffs(degree, wfc3_filter_info)
     # With SIP coefficients from the FITS header
