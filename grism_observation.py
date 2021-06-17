@@ -8,12 +8,14 @@ from astropy import units as u
 from gwcs import wcs as gwcs
 from gwcs import coordinate_frames as cf
 import numpy as np
+import pathlib
 
 from HST.transform_models import WFC3IRForwardGrismDispersion, WFC3IRBackwardGrismDispersion
-from HST import DISPXY_Extension
+from HST.dispersion_models import DISPXY_Extension
 
 # Will remove this hardcoded path once I have this packaged up for use with importlib
-pkg_dir = '/Users/rosteen/projects/astrogrism_sandbox'
+#pkg_dir = pathlib.Path('/Users/rosteen/projects/astrogrism_sandbox')
+pkg_dir = pathlib.Path(__file__).parent.absolute()
 
 class GrismObs():
     """
@@ -81,7 +83,8 @@ class GrismObs():
         asdf.get_config().add_extension(DISPXY_Extension())
 
         # Get paths to premade configuration files
-        config_dir = "{}/config/{}/".format(pkg_dir, self.telescope)
+        #config_dir = "{}/config/{}/".format(pkg_dir, self.telescope)
+        config_dir = pkg_dir / 'config' / self.telescope
 
         if self.telescope == "HST":
             if self.filter in ("G102", "G141"):
@@ -90,14 +93,13 @@ class GrismObs():
                 instrument = self.instrument + "_UV"
         else:
             instrument = self.instrument
-        sip_file = "{}/{}_distortion.fits".format(config_dir,
-                                                  instrument)
-        spec_wcs_file = "{}/{}_{}_specwcs.asdf".format(config_dir,
+        sip_file = config_dir / "{}_distortion.fits".format(instrument)
+        spec_wcs_file = config_dir / "{}_{}_specwcs.asdf".format(
                                                        self.instrument,
                                                        self.filter)
 
         # Build the grism_detector <-> detector transforms
-        specwcs = asdf.open(spec_wcs_file).tree
+        specwcs = asdf.open(str(spec_wcs_file)).tree
         displ = specwcs['displ']
         dispx = specwcs['dispx']
         dispy = specwcs['dispy']
@@ -121,7 +123,7 @@ class GrismObs():
         grism_pipeline = [(gdetector, det2det)]
 
         # Now add the detector -> world transform
-        sip_hdus = fits.open(sip_file)
+        sip_hdus = fits.open(str(sip_file))
 
         acoef = dict(sip_hdus[1].header['A_*'])
         a_order = acoef.pop('A_ORDER')
