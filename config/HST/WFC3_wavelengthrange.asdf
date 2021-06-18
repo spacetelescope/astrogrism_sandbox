@@ -1,0 +1,56 @@
+#ASDF 1.0.0
+#ASDF_STANDARD 1.5.0
+%YAML 1.1
+%TAG ! tag:stsci.edu:asdf/
+--- !core/asdf-1.1.0
+asdf_library: !core/software-1.0.0 {author: The ASDF Developers, homepage: 'http://github.com/asdf-format/asdf',
+  name: asdf, version: 2.8.0.dev107+g8ccee8b}
+history:
+  entries:
+  - !core/history_entry-1.0.0
+    description: WFC3 TSGrism wavelengthrange
+    software: !core/software-1.0.0 {author: STScI, homepage: 'https://github.com/spacetelescope/astrogrism_sandbox',
+      name: wfc3_reftools.py, version: 0.0.0}
+    time: 2021-05-07 15:17:24.318158
+  extensions:
+  - !core/extension_metadata-1.0.0
+    extension_class: asdf.extension.BuiltinExtension
+    software: !core/software-1.0.0 {name: asdf, version: 2.8.0.dev107+g8ccee8b}
+  - !core/extension_metadata-1.0.0
+    extension_class: astropy.io.misc.asdf.extension.AstropyAsdfExtension
+    software: !core/software-1.0.0 {name: astropy, version: '4.1'}
+extract_orders:
+- - G102
+  - [1]
+- - G141
+  - [1]
+meta:
+  author: STScI
+  date: '2021-05-07T11:17:24.308'
+  description: WFC3 Grism-Filter Wavelength Ranges
+  exposure: {p_exptype: WFC3_TSGRISM}
+  filename: WFC3_wavelengthrange.asdf
+  input_units: !unit/unit-1.0.0 'um'
+  instrument: {}
+  model_type: WavelengthrangeModel
+  output_units: !unit/unit-1.0.0 'um'
+  pedigree: ground
+  reftype: wavelengthrange
+  telescope: HST
+  title: WFC3 TSGRISM reference file
+  useafter: '2014-01-01T00:00:00'
+order: [-1, 0, 1, 2, 3, 4]
+wavelengthrange:
+- [-1, G102, 0.7488958984375, 1.1496958984375]
+- [0, G102, 0.7401, 1.2297]
+- [1, G102, 0.7496, 1.1979]
+- [2, G102, 0.7401, 1.1897]
+- [3, G102, 0.7571, 0.9878]
+- [-1, G141, 1.031, 1.7845]
+- [0, G141, 1.0402, 1.6998]
+- [1, G141, 0.9953, 1.7697]
+- [2, G141, 0.9702, 1.5903]
+- [3, G141, 1.0068, 1.3875]
+- [4, G141, 1.031, 1.7845]
+waverange_selector: [G102, G141]
+...

@@ -17,7 +17,7 @@ import pysiaf
 from stdatamodels import util
 
 #import read_siaf_table
-
+'''
 def get_distortion_coeffs(degree, filter_info):
     """Retrieve the requested set of distortion coefficients from Siaf
     and package into a dictionary
@@ -44,6 +44,30 @@ def get_distortion_coeffs(degree, filter_info):
             x_coeffs[key] = filter_info[xcolname]
             y_coeffs[key] = filter_info[ycolname]
     return x_coeffs, y_coeffs
+'''
+
+
+def get_distortion_coeffs(degree, filter_info):
+    """Do this with the grism file header input instead"""
+    a_coeffs = {}
+    b_coeffs = {}
+    ap_coeffs = {}
+    bp_coeffs = {}
+
+    for key in filter_info:
+        if key[0:2] == "A_" or key[0:2] == "B_":
+            if "ORDER" in key:
+                continue
+            split_key = key.split("_")
+            new_key = "c{}_{}".format(split_key[1], split_key[2])
+            if split_key[0] == "A":
+                a_coeffs[new_key] = filter_info[key]
+            elif split_key[0] == "B":
+                b_coeffs[new_key] = filter_info[key]
+
+
+    return a_coeffs, b_coeffs
+
 
 def get_SIP_Model():
     """Constructs the SIP Distortion Astropy Model using the coefficients file
@@ -136,6 +160,7 @@ def v2v3_model(from_sys, to_sys, par, angle):
 
     return xmodel, ymodel
 
+
 #https://github.com/spacetelescope/nircam_calib/blob/master/nircam_calib/reffile_creation/pipeline/distortion/nircam_distortion_reffiles_from_pysiaf.py#L37
 def create_wfc3_distortion(detector, outname, sci_pupil,
                              sci_subarr, sci_exptype, history_entry, filter, save_to_asdf=False):
@@ -158,20 +183,25 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     """
     # Download WFC3 Image Distortion File
     from astropy.utils.data import download_file
-    fn = download_file('https://hst-crds.stsci.edu/unchecked_get/references/hst/w3m18525i_idc.fits', cache=True)
-    wfc3_distortion_file = fits.open(fn)
-    wfc3_filter_info = wfc3_distortion_file[1].data[list(wfc3_distortion_file[1].data['FILTER']).index(filter)]
-    
-    
+    # IDC Coefficient File
+    #fn = download_file('https://hst-crds.stsci.edu/unchecked_get/references/hst/w3m18525i_idc.fits', cache=True)
+    #wfc3_distortion_file = fits.open(fn)
+    #wfc3_filter_info = wfc3_distortion_file[1].data[list(wfc3_distortion_file[1].data['FILTER']).index(filter)]
+
+    # Raw FLT Grism image file with encoded SIP Distortion Coeffients
+    fn = download_file('https://github.com/npirzkal/aXe_WFC3_Cookbook/raw/main/cookbook_data/G141/ib6o23rsq_flt.fits', cache=True)
+    grism_image_hdulist = fits.open(fn)
+    distortion_info = grism_image_hdulist['SCI'].header
+
     degree = 4  # WFC3 Distortion is fourth degree
-    
+
     # From Bryan Hilbert:
     #   The parity term is just an indicator of the relationship between the detector y axis and the “science” y axis.
     #   A parity of -1 means that the y axes of the two systems run in opposite directions... A value of 1 indicates no flip.
     # From Colin Cox:
     #   ... for WFC3 it is always -1 so maybe people gave up mentioning it.
     parity = -1
-    
+
     #full_aperture = detector + '_' + aperture
 
     # Get Siaf instance for detector/aperture
@@ -180,13 +210,19 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
 
     # *****************************************************
     # "Forward' transformations. science --> ideal --> V2V3
-    xcoeffs, ycoeffs = get_distortion_coeffs(degree, wfc3_filter_info)
+
+    # With IDCTAB file
+    #xcoeffs, ycoeffs = get_distortion_coeffs(degree, wfc3_filter_info)
+    # With SIP coefficients from the FITS header
+    xcoeffs, ycoeffs = get_distortion_coeffs(degree, distortion_info)
 
     sci2idlx = Polynomial2D(degree, **xcoeffs)
     sci2idly = Polynomial2D(degree, **ycoeffs)
 
     # Get info for ideal -> v2v3 or v2v3 -> ideal model
-    idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(wfc3_distortion_file[1].data[wfc3_distortion_file[1].data['FILTER'] == filter]['THETA'][0]))
+    #idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(wfc3_distortion_file[1].data[wfc3_distortion_file[1].data['FILTER'] == filter]['THETA'][0]))
+
+    idl2v2v3x, idl2v2v3y = v2v3_model('ideal', 'v2v3', parity, np.radians(distortion_info["IDCTHETA"]))
 
     '''
     # *****************************************************
@@ -224,14 +260,18 @@ def create_wfc3_distortion(detector, outname, sci_pupil,
     # 1-indexed
 
     # Find the distance between (0,0) and the reference location
-    xshift = Shift(wfc3_filter_info['XREF'])
-    yshift = Shift(wfc3_filter_info['YREF'])
-    
+    #xshift = Shift(wfc3_filter_info['XREF'])
+    #yshift = Shift(wfc3_filter_info['YREF'])
+    xshift = Shift(distortion_info['IDCXREF'])
+    yshift = Shift(distortion_info['IDCYREF'])
+
     # Finally, we need to shift by the v2,v3 value of the reference
     # location in order to get to absolute v2,v3 coordinates
-    v2shift = Shift(wfc3_filter_info['V2REF'])
-    v3shift = Shift(wfc3_filter_info['V3REF'])
-    
+    #v2shift = Shift(wfc3_filter_info['V2REF'])
+    #v3shift = Shift(wfc3_filter_info['V3REF'])
+    v2shift = Shift(distortion_info['IDCV2REF'])
+    v3shift = Shift(distortion_info['IDCV3REF'])
+
     # SIAF coords
     index_shift = Shift(1)
     model = index_shift & index_shift | xshift & yshift | core_model | v2shift & v3shift
