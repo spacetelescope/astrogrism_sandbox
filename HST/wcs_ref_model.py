@@ -4,7 +4,7 @@ from stdatamodels.validate import ValidationWarning
 
 from jwst.datamodels import ReferenceFileModel
 
-class WFC3IRGrismModel(ReferenceFileModel):
+class WFC3GrismModel(ReferenceFileModel):
     """
     A model for a reference file of type "specwcs" for HST IR grisms (G141 and
     G102). This reference file contains the models for wave, x, and y \
@@ -26,6 +26,8 @@ class WFC3IRGrismModel(ReferenceFileModel):
     orders : `~astropy.modeling.Model`
           HST Grism orders, matched to the array locations of the
           dispersion models
+    channel : `str`
+          WFC3 channel (IR or UVIS)
     """
     schema_url = "http://stsci.edu/schemas/jwst_datamodel/specwcs_nircam_grism.schema"
     reftype = "specwcs"
@@ -38,6 +40,7 @@ class WFC3IRGrismModel(ReferenceFileModel):
                        invdispx=None,
                        invdispy=None,
                        orders=None,
+                       channel=None,
                        **kwargs):
         super(WFC3IRGrismModel, self).__init__(init=init, **kwargs)
 
@@ -57,10 +60,14 @@ class WFC3IRGrismModel(ReferenceFileModel):
             self.invdispy = invdispy
         if orders is not None:
             self.orders = orders
+        if channel is None:
+            raise ValueError("Must specify channel (UVIS or IR)")
+        else:
+            self.channel = channel
 
     def populate_meta(self):
         self.meta.instrument.name = "WFC3"
-        self.meta.exposure.type = "IR_GRISM"
+        self.meta.exposure.type = f"{self.channel}_GRISM"
         self.meta.reftype = self.reftype
 
     def validate(self):
@@ -69,7 +76,7 @@ class WFC3IRGrismModel(ReferenceFileModel):
             assert isinstance(self.meta.input_units, (str, u.NamedUnit))
             assert isinstance(self.meta.output_units, (str, u.NamedUnit))
             assert self.meta.instrument.name == "WFC3"
-            assert self.meta.exposure.type == "IR_GRISM"
+            assert self.meta.exposure.type == f"{self.channel}_GRISM"
             assert self.meta.reftype == self.reftype
         except AssertionError as errmsg:
             if self._strict_validation:
