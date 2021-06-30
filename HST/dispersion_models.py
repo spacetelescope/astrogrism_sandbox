@@ -14,15 +14,32 @@ class DISPXY_Model(Model):
         self.inv = inv
         self.offset = offset
 
+        if len(self.ematrix.shape) > 1:
+            if self.inv and self.ematrix.shape[1] > 2:
+                print(self.ematrix.shape)
+                raise NotImplementedError("Cannot create inverse dispersion transform"
+                                          " for higher order than linear in t")
+
     # Note that in the inverse case, input "t" here is actually dx or dy
     def evaluate(self, x, y, t):
         e = self.ematrix
         offset = self.offset
-        coeffs = np.array([1, x, y, x**2, x*y, y**2])
+        coeffs = {1: np.array([1]),
+                  6: np.array([1, x, y, x**2, x*y, y**2])}
+
+        t_order = e.shape[0]
+        c_order = e.shape[1]
+
+        f = 0
+
         if self.inv:
-            return (t + offset - np.dot(coeffs, e[0,:]))/np.dot(coeffs, e[1,:])
+            f = ((t + offset - np.dot(coeffs[c_order], e[0,:])) /
+                 np.dot(coeffs[c_order], e[1,:]))
         else:
-            return np.dot(coeffs, e[0,:]) + t*np.dot(coeffs, e[1,:]) - offset
+            for i in range(0, t_order):
+                f += t**i * (np.dot(coeffs[c_order], e[i,:]))
+
+        return f
 
 class DISPXY_ModelConverter(Converter):
     tags = ["tag:stsci.edu:grismstuff/dispxy_model-*"]

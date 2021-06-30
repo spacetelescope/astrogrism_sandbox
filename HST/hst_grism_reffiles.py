@@ -9,7 +9,7 @@ from astropy import units as u
 from astropy.modeling.models import Polynomial1D
 
 #from jwst.datamodels import NIRCAMGrismModel
-from .wcs_ref_model import WFC3IRGrismModel
+from .wcs_ref_model import WFC3GrismModel
 from jwst.datamodels import wcs_ref_models
 from .dispersion_models import DISPXY_Model, DISPXY_Extension
 
@@ -111,25 +111,31 @@ def create_grism_specwcs(conffile="",
 
     Returns
     -------
-    fasdf : asdf.AsdfFile(WFC3IRGrismModel)
+    fasdf : asdf.AsdfFile(WFC3GrismModel)
 
     """
-    if outname is None:
-        outname = "wfc3_ir_specwcs.asdf"
-    if not history:
-        history = "Created from {0:s}".format(conffile)
 
     # if pupil is none get from filename like NIRCAM_modB_R.conf
     if pupil is None:
         pupil = "GRISM" + conffile.split(".")[0][-1]
     print("Pupil is {}".format(pupil))
 
+    if outname is None:
+        outname = "WFC3_{}_specwcs.asdf".format(pupil)
+    if not history:
+        history = "Created from {0:s}".format(conffile)
+
+    if pupil in ("G102", "G141"):
+        channel = "IR"
+    elif pupil == "G280":
+        channel = "UVIS"
+
     ref_kw = common_reference_file_keywords(reftype="specwcs",
-                                            title="HST IR Grism Parameters",
+                                            title=f"HST {channel} Grism Parameters",
                                             description="{0:s} dispersion models".format(pupil),
-                                            exp_type="WFC3_IR",
+                                            exp_type=f"WFC3_{channel}",
                                             author=author,
-                                            model_type="WFC3IRGrismModel",
+                                            model_type=f"WFC3GrismModel",
                                             fname=direct_filter,
                                             pupil=pupil,
                                             filename=outname,
@@ -141,12 +147,19 @@ def create_grism_specwcs(conffile="",
 
     # Get x and y offsets from the filter, if necessary
     if direct_filter is not None:
-        wx = beamdict["WEDGE"][direct_filter][0]
-        wy = beamdict["WEDGE"][direct_filter][0]
+        try:
+            wx = beamdict["WEDGE"][direct_filter][0]
+            wy = beamdict["WEDGE"][direct_filter][0]
+        except KeyError:
+            raise KeyError(f"No WEDGE information for {direct_filer} in conf file")
     else:
         wx, wy = 0, 0
 
-    beamdict.pop("WEDGE")
+    # UVIS conf files don't have WEDGE info
+    try:
+        beamdict.pop("WEDGE")
+    except KeyError:
+        pass
 
     # beam = re.compile('^(?:[+\-]){0,1}[a-zA-Z0-9]{0,1}$')  # match beam only
     # read in the sensitivity tables to save their content
@@ -194,21 +207,21 @@ def create_grism_specwcs(conffile="",
     for order in orders:
         # convert the displ wavelengths to microns if the input
         # file is still in angstroms
-        l0 = beamdict[order]['DISPL'][0] / 10000.
-        l1 = beamdict[order]['DISPL'][1] / 10000.
+        #l0 = beamdict[order]['DISPL'][0] / 10000.
+        #l1 = beamdict[order]['DISPL'][1] / 10000.
 
         # create polynomials using the coefficients of each order
 
         # This holds the wavelength lookup coeffs
         # This model is  INVDISPL for backward and returns t
         # This model should be DISPL for forward and returns wavelength
-        if l1 == 0:
-            lmodel = Polynomial1D(1, c0=0, c1=0)
-        else:
-            lmodel = Polynomial1D(1, c0=-l0/l1, c1=1./l1)
-        invdispl.append(lmodel)
-        lmodel = Polynomial1D(1, c0=l0, c1=l1)
-        displ.append(lmodel)
+        #if l1 == 0:
+        #    lmodel = Polynomial1D(1, c0=0, c1=0)
+        #else:
+        #    lmodel = Polynomial1D(1, c0=-l0/l1, c1=1./l1)
+        #invdispl.append(lmodel)
+        #lmodel = Polynomial1D(1, c0=l0, c1=l1)
+        #displ.append(lmodel)
 
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
@@ -233,7 +246,7 @@ def create_grism_specwcs(conffile="",
     # We need to register the converter for the DISPXY_Model class with asdf
     asdf.get_config().add_extension(DISPXY_Extension())
 
-    ref = WFC3IRGrismModel()
+    ref = WFC3GrismModel(channel=channel)
     ref.meta.update(ref_kw)
     # This reference file is good for NRC_WFSS and TSGRISM modes
     ref.meta.exposure.p_exptype = "NRC_WFSS|NRC_TSGRISM"
