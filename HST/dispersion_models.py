@@ -39,13 +39,12 @@ class DISPXY_Model(Model):
 
         if len(self.ematrix.shape) > 1:
             if self.inv and self.ematrix.shape[1] > 2:
-                print(self.ematrix.shape)
-                raise NotImplementedError("Cannot create inverse dispersion transform"
-                                          " for higher order than linear in t")
+                # Have to do the inverse transform for higher order in t via interpolation
+                self.interpolate=True
 
     # Note that in the inverse case, input "t" here is actually dx or dy
     # t0 is only used in the case of interpolating for an inverse transform
-    def evaluate(self, x, y, t, t0=np.linspace(-1,2,40), inv=None,interpolate=None):
+    def evaluate(self, x, y, t, t0=np.linspace(-1,2,40), inv=None, interpolate=None):
         # Need this to allow override of inverse and interpolate for recursion
         if inv is None:
             inv = self.inv

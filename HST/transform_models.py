@@ -102,9 +102,14 @@ class WFC3IRForwardGrismDispersion(Model):
         #y00 = y0.flatten()[0]
 
         t = np.linspace(0, 1, 10)  #sample t
-        xmodel = self.xmodels[iorder]
-        ymodel = self.ymodels[iorder]
-        lmodel = self.lmodels[iorder]
+        try:
+            xmodel = self.xmodels[iorder]
+            ymodel = self.ymodels[iorder]
+            lmodel = self.lmodels[iorder]
+        except:
+            print(self.lmodels)
+            print(iorder)
+            raise
 
         dx = xmodel.evaluate(x0, y0, t)
         dy = ymodel.evaluate(x0, y0, t)
@@ -161,6 +166,8 @@ class WFC3IRBackwardGrismDispersion(Model):
                  ymodels=None, theta=None, name=None, meta=None):
         self._order_mapping = {int(k): v for v, k in enumerate(orders)}
         self.xmodels = xmodels
+        # TODO: Raise a warning if no inverse transform is possible (for example
+        # the current state of UVIS)
         self.ymodels = ymodels
         self.lmodels = lmodels
         self.orders = orders
@@ -201,6 +208,8 @@ class WFC3IRBackwardGrismDispersion(Model):
         usu. taken to be the different between fwcpos_ref in the specwcs
         reference file and fwcpos from the input image.
         """
+        if self.ymodels is None:
+            return None
         if wavelength < 0:
             raise ValueError("Wavelength should be greater than zero")
 
@@ -211,7 +220,10 @@ class WFC3IRBackwardGrismDispersion(Model):
         except KeyError:
             raise ValueError("Specified order is not available")
 
-        t = self.lmodels[iorder](wavelength)
+        if self.lmodels[iorder].n_inputs == 1:
+            t = self.lmodels[iorder](wavelength)
+        elif self.lmodels[iorder].n_inputs == 3:
+            t = self.lmodels[iorder](x, y, wavelength)
         xmodel = self.xmodels[iorder]
         ymodel = self.ymodels[iorder]
 

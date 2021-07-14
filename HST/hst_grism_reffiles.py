@@ -194,6 +194,8 @@ def create_grism_specwcs(conffile="",
     # pixel in the dispersed image.
     orders = beamdict.keys()
 
+    print(f"Orders: {orders}")
+
     # dispersion models valid per order and direction saved to reference file
     # Forward
     invdispl = []
@@ -207,21 +209,29 @@ def create_grism_specwcs(conffile="",
     for order in orders:
         # convert the displ wavelengths to microns if the input
         # file is still in angstroms
-        #l0 = beamdict[order]['DISPL'][0] / 10000.
-        #l1 = beamdict[order]['DISPL'][1] / 10000.
+        l_coeffs = np.array(beamdict[order]['DISPL']) / 10000.
 
         # create polynomials using the coefficients of each order
 
         # This holds the wavelength lookup coeffs
         # This model is  INVDISPL for backward and returns t
         # This model should be DISPL for forward and returns wavelength
-        #if l1 == 0:
-        #    lmodel = Polynomial1D(1, c0=0, c1=0)
-        #else:
-        #    lmodel = Polynomial1D(1, c0=-l0/l1, c1=1./l1)
-        #invdispl.append(lmodel)
-        #lmodel = Polynomial1D(1, c0=l0, c1=l1)
-        #displ.append(lmodel)
+        print(f"lcoeffs: {l_coeffs}")
+        if l_coeffs.shape == (2,):
+            l0 = l_coeffs[0]
+            l1 = l_coeffs[1]
+            if l1 == 0:
+                lmodel = Polynomial1D(1, c0=0, c1=0)
+            else:
+                lmodel = Polynomial1D(1, c0=-l0/l1, c1=1./l1)
+            invdispl.append(lmodel)
+            lmodel = Polynomial1D(1, c0=l0, c1=l1)
+            displ.append(lmodel)
+        else:
+            lmodel = DISPXY_Model(l_coeffs, 0, inv=True)
+            invdispl.append(lmodel)
+            lmodel = DISPXY_Model(l_coeffs, 0)
+            displ.append(lmodel)
 
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
@@ -236,8 +246,11 @@ def create_grism_specwcs(conffile="",
         e = beamdict[order]['DISPY']
         ymodel = DISPXY_Model(e, wy)
         dispy.append(ymodel)
-        inv_ymodel = DISPXY_Model(e, wy, inv=True)
-        invdispy.append(ymodel)
+        try:
+            inv_ymodel = DISPXY_Model(e, wy, inv=True)
+            invdispy.append(ymodel)
+        except:
+            invdispy.append(None)
 
     # change the orders into translatable integers
     # so that we can look up the order with the proper index
@@ -254,9 +267,7 @@ def create_grism_specwcs(conffile="",
     ref.meta.output_units = u.micron
     ref.displ = displ
     ref.dispx = dispx
-    print(ref.dispx)
     ref.dispy = dispy
-    print(ref.dispy)
     ref.invdispx = invdispx
     ref.invdispy = invdispy
     ref.invdispl = invdispl

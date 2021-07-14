@@ -42,8 +42,12 @@ class WFC3GrismModel(ReferenceFileModel):
                        orders=None,
                        channel=None,
                        **kwargs):
-        super(WFC3IRGrismModel, self).__init__(init=init, **kwargs)
+        super(WFC3GrismModel, self).__init__(init=init, **kwargs)
 
+        if channel is None:
+            raise ValueError("Must specify channel (UVIS or IR)")
+        else:
+            self.channel = channel
         if init is None:
             self.populate_meta()
         if displ is not None:
@@ -60,10 +64,6 @@ class WFC3GrismModel(ReferenceFileModel):
             self.invdispy = invdispy
         if orders is not None:
             self.orders = orders
-        if channel is None:
-            raise ValueError("Must specify channel (UVIS or IR)")
-        else:
-            self.channel = channel
 
     def populate_meta(self):
         self.meta.instrument.name = "WFC3"
@@ -71,7 +71,7 @@ class WFC3GrismModel(ReferenceFileModel):
         self.meta.reftype = self.reftype
 
     def validate(self):
-        super(WFC3IRGrismModel, self).validate()
+        super(WFC3GrismModel, self).validate()
         try:
             assert isinstance(self.meta.input_units, (str, u.NamedUnit))
             assert isinstance(self.meta.output_units, (str, u.NamedUnit))
