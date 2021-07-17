@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from astropy.modeling.models import custom_model
+from astropy.modeling.models import custom_model, Tabular1D
 from astropy.modeling import Model, Parameter
 from asdf.extension import Converter
 
@@ -37,6 +37,10 @@ class DISPXY_Model(Model):
         self.interpolate = interpolate
         self.offset = offset
 
+        if self.ematrix.shape == (2,):
+            # Reshape to add second dimension for ematrix with only two values
+            self.ematrix = np.reshape(self.ematrix, [2,1])
+
         if len(self.ematrix.shape) > 1:
             if self.inv and self.ematrix.shape[1] > 2:
                 # Have to do the inverse transform for higher order in t via interpolation
@@ -53,11 +57,25 @@ class DISPXY_Model(Model):
 
         e = self.ematrix
         offset = self.offset
+        if isinstance(x, np.ndarray):
+            if len(x) == 1:
+                x = float(x)
+            else:
+                raise ValueError(f"x is array: {x}")
+        if isinstance(y, np.ndarray):
+            if len(y) == 1:
+                y = float(y)
+            else:
+                raise ValueError(f"y is array: {y}")
+
         coeffs = {1: np.array([1]),
                   6: np.array([1, x, y, x**2, x*y, y**2])}
 
         t_order = e.shape[0]
-        c_order = e.shape[1]
+        if len(e.shape) == 1:
+            c_order = 1
+        else:
+            c_order = e.shape[1]
 
         f = 0
 
@@ -65,7 +83,7 @@ class DISPXY_Model(Model):
             if interpolate:
                 xr, yr = self.evaluate(x, y, t0, inv=False)
                 so = np.argsort(yr)
-                interpolation = interp1d_picklable(yr[so], t0[so])
+                interpolation = Tabular1D(yr[so], t0[so])
                 f = interpolation(t)
             else:
                 f = ((t + offset - np.dot(coeffs[c_order], e[0,:])) /

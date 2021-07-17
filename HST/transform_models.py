@@ -102,14 +102,10 @@ class WFC3IRForwardGrismDispersion(Model):
         #y00 = y0.flatten()[0]
 
         t = np.linspace(0, 1, 10)  #sample t
-        try:
-            xmodel = self.xmodels[iorder]
-            ymodel = self.ymodels[iorder]
-            lmodel = self.lmodels[iorder]
-        except:
-            print(self.lmodels)
-            print(iorder)
-            raise
+
+        xmodel = self.xmodels[iorder]
+        ymodel = self.ymodels[iorder]
+        lmodel = self.lmodels[iorder]
 
         dx = xmodel.evaluate(x0, y0, t)
         dy = ymodel.evaluate(x0, y0, t)
@@ -125,7 +121,6 @@ class WFC3IRForwardGrismDispersion(Model):
         wavelength = dxr | tab | lmodel
         model = Mapping((2, 3, 0, 2, 4)) | Const1D(x0) & Const1D(y0) & wavelength & Const1D(order)
         return model(x, y, x0, y0, order)
-
 
 
 class WFC3IRBackwardGrismDispersion(Model):
@@ -220,15 +215,29 @@ class WFC3IRBackwardGrismDispersion(Model):
         except KeyError:
             raise ValueError("Specified order is not available")
 
-        if self.lmodels[iorder].n_inputs == 1:
-            t = self.lmodels[iorder](wavelength)
-        elif self.lmodels[iorder].n_inputs == 3:
-            t = self.lmodels[iorder](x, y, wavelength)
+        try:
+            if self.lmodels[iorder].n_inputs == 1:
+                t = self.lmodels[iorder](wavelength)
+            elif self.lmodels[iorder].n_inputs == 3:
+                t = self.lmodels[iorder](x, y, wavelength)
+        except:
+            print("Error in lmodel evaluation")
+            print("N inputs: {}".format(self.lmodels[iorder].n_inputs))
+            raise
+
         xmodel = self.xmodels[iorder]
         ymodel = self.ymodels[iorder]
 
-        dx = xmodel.evaluate(x, y, t)
-        dy = ymodel.evaluate(x, y, t)
+        try:
+            dx = xmodel.evaluate(x, y, t)
+        except:
+            print("Error in xmodel")
+            raise
+        try:
+            dy = ymodel.evaluate(x, y, t)
+        except:
+            print("Error in ymodel")
+            raise
 
         ## rotate by theta
         if self.theta != 0.0:
