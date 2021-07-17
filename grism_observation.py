@@ -76,7 +76,8 @@ class GrismObs():
 
         TODO:
         - Try to get SIP coefficients from grism observation header before
-        resorting to premade file
+        resorting to premade file. _flt files do not have inverse SIP
+        coefficients, so that would require calculating them on the fly.
         """
 
         # Register custom asdf extension
@@ -90,7 +91,7 @@ class GrismObs():
             if self.filter in ("G102", "G141"):
                 instrument = self.instrument + "_IR"
             elif self.filter == "G280":
-                instrument = self.instrument + "_UV"
+                instrument = self.instrument + "_UVIS"
         else:
             instrument = self.instrument
         sip_file = config_dir / "{}_distortion.fits".format(instrument)
@@ -105,7 +106,11 @@ class GrismObs():
         dispy = specwcs['dispy']
         invdispl = specwcs['invdispl']
         invdispx = specwcs['invdispx']
-        invdispy = specwcs['invdispy']
+        try:
+            invdispy = specwcs['invdispy']
+        except KeyError:
+            # Value of None doesn't seem to save in asdf, set it here
+            invdispy = None
         orders = specwcs['order']
 
         gdetector = cf.Frame2D(name='grism_detector',
@@ -115,6 +120,8 @@ class GrismObs():
                                                lmodels=displ,
                                                xmodels=invdispx,
                                                ymodels=dispy)
+        # TODO: Decide where to raise a warning if we can't do the backward
+        # grism transformation (UVIS, at least for now).
         det2det.inverse = WFC3IRBackwardGrismDispersion(orders,
                                                         lmodels=invdispl,
                                                         xmodels=dispx,
@@ -140,13 +147,17 @@ class GrismObs():
         except ValueError:
             raise
 
-        crpix = [sip_hdus[1].header['CRPIX1'], sip_hdus[1].header['CRPIX2']]
+        #crpix = [sip_hdus[1].header['CRPIX1'], sip_hdus[1].header['CRPIX2']]
+        crpix = [self.grism_image[1].header['CRPIX1'], self.grism_image[1].header['CRPIX2']]
 
         crval = [self.grism_image[1].header['CRVAL1'],
                  self.grism_image[1].header['CRVAL2']]
 
-        cdmat = np.array([[sip_hdus[1].header['CD1_1'], sip_hdus[1].header['CD1_2']],
-                  [sip_hdus[1].header['CD2_1'], sip_hdus[1].header['CD2_2']]])
+        #cdmat = np.array([[sip_hdus[1].header['CD1_1'], sip_hdus[1].header['CD1_2']],
+        #          [sip_hdus[1].header['CD2_1'], sip_hdus[1].header['CD2_2']]])
+
+        cdmat = np.array([[self.grism_image[1].header['CD1_1'], self.grism_image[1].header['CD1_2']],
+                          [self.grism_image[1].header['CD2_1'], self.grism_image[1].header['CD2_2']]])
 
         a_polycoef = {}
         for key in acoef:
@@ -170,6 +181,7 @@ class GrismObs():
         bp_poly = models.Polynomial2D(bp_order, **bp_polycoef)
 
         # See SIP definition paper for definition of u, v, f, g
+        # TODO: maybe don't hardcode the pole to rotate around (180 for HST)?
         SIP_forward = (models.Shift(-(crpix[0]-1)) & models.Shift(-(crpix[1]-1)) | # Calculate u and v
              models.Mapping((0, 1, 0, 1, 0, 1)) | a_poly & b_poly & models.Identity(2) |
              models.Mapping((0, 2, 1, 3)) | models.math.AddUfunc() & models.math.AddUfunc() |
