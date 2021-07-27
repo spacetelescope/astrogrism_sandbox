@@ -176,6 +176,7 @@ class WFC3IRBackwardGrismDispersion(Model):
         self.lmodels = lmodels
         self.orders = orders
         self.theta = theta
+        self.interpolate_t = interpolate_t
         meta = {"orders": orders}
         if name is None:
             name = 'wfc3ir_backward_grism_dispersion'
@@ -225,13 +226,13 @@ class WFC3IRBackwardGrismDispersion(Model):
             raise ValueError("Specified order is not available")
 
         try:
-            if interpolate_t:
+            if self.interpolate_t:
                 # If the displ coefficients are too complex to invert, have to interpolate t
-                t = np.linspace(0, 1, 40)  #sample t
+                t = np.linspace(-1, 2, 40)  #sample t
                 if self.lmodels[iorder].n_inputs == 1:
-                    l = self.lmodels[iorder](wavelength)
+                    l = self.lmodels[iorder].evaluate(t)
                 elif self.lmodels[iorder].n_inputs == 3:
-                    l = lmodel.evaluate(x, y, t)
+                    l = self.lmodels[iorder].evaluate(x, y, t)
                 so = np.argsort(l)
                 tab = Tabular1D(l[so], t[so], bounds_error=False, fill_value=None)
                 t = tab(wavelength)
