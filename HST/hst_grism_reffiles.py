@@ -228,8 +228,14 @@ def create_grism_specwcs(conffile="",
             lmodel = Polynomial1D(1, c0=l0, c1=l1)
             displ.append(lmodel)
         else:
-            lmodel = DISPXY_Model(l_coeffs, 0, inv=True)
+            # Can't invert higher order in t
+            if len(l_coeffs.shape) > 1:
+                try:
+                    lmodel = DISPXY_Model(l_coeffs, 0, inv=True)
+                except ValueError:
+                    lmodel=None
             invdispl.append(lmodel)
+
             lmodel = DISPXY_Model(l_coeffs, 0)
             displ.append(lmodel)
 

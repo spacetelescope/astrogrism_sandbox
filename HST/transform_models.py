@@ -107,8 +107,16 @@ class WFC3IRForwardGrismDispersion(Model):
         ymodel = self.ymodels[iorder]
         lmodel = self.lmodels[iorder]
 
-        dx = xmodel.evaluate(x0, y0, t)
-        dy = ymodel.evaluate(x0, y0, t)
+        try:
+            dx = xmodel.evaluate(x0, y0, t)
+        except:
+            print("Error in x model evaluation")
+            raise
+        try:
+            dy = ymodel.evaluate(x0, y0, t)
+        except:
+            print ("Error in y model evaluation")
+            raise
 
         if self.theta != 0.0:
             rotate = Rotation2D(self.theta)
@@ -219,6 +227,7 @@ class WFC3IRBackwardGrismDispersion(Model):
             if self.lmodels[iorder].n_inputs == 1:
                 t = self.lmodels[iorder](wavelength)
             elif self.lmodels[iorder].n_inputs == 3:
+                print("In 3 input section")
                 t = self.lmodels[iorder](x, y, wavelength)
         except:
             print("Error in lmodel evaluation")
