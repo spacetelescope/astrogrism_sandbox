@@ -216,7 +216,6 @@ def create_grism_specwcs(conffile="",
         # This holds the wavelength lookup coeffs
         # This model is  INVDISPL for backward and returns t
         # This model should be DISPL for forward and returns wavelength
-        print(f"lcoeffs: {l_coeffs}")
         if l_coeffs.shape == (2,):
             l0 = l_coeffs[0]
             l1 = l_coeffs[1]
@@ -493,7 +492,7 @@ def split_order_info(keydict):
 
     # has beam name fits token
     token = re.compile('^[a-zA-Z]*_(?:[+\-]){0,1}[a-zA-Z0-9]{0,1}_*')
-    rangekey = re.compile('^[a-zA-Z]*_[0-1]{1,1}$')
+    rangekey = re.compile('^[a-zA-Z]*_[0-1]{0,1}[0-9]{1,1}$')
     rdict = dict()  # return dictionary
     beams = list()
 
@@ -533,15 +532,10 @@ def split_order_info(keydict):
             mlist = [m for m in rkeys if k.split("_")[0] in m]
             root = mlist[0].split("_")[0]
             if root not in odict:
+                temp_list = []
                 for mk in mlist:
-                    if eval(mk[-1]) == 0:
-                        zero = d[mk]
-                    elif eval(mk[-1]) == 1:
-                        one = d[mk]
-                    else:
-                        raise ValueError("Unexpected range variable {}"
-                                         .format(mk))
-                odict[root] = (zero, one)
+                    temp_list.append(d[mk])
+                odict[root] = tuple(temp_list)
         # combine the dictionaries and remove the old keys
         d.update(odict)
         for k in rkeys:
@@ -617,6 +611,6 @@ def dict_from_file(filename):
         if key and (value is not None):
             if (("FILTER" not in key) and ("SENSITIVITY" not in key)):
                 content[key] = value
-                print("Setting {0:s} = {1}".format(key, value))
+                #print("Setting {0:s} = {1}".format(key, value))
 
     return content
