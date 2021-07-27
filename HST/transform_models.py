@@ -166,7 +166,8 @@ class WFC3IRBackwardGrismDispersion(Model):
     n_outputs = 5
 
     def __init__(self, orders, lmodels=None, xmodels=None,
-                 ymodels=None, theta=None, name=None, meta=None):
+                 ymodels=None, theta=None, name=None, meta=None,
+                 interpolate_t=False):
         self._order_mapping = {int(k): v for v, k in enumerate(orders)}
         self.xmodels = xmodels
         # TODO: Raise a warning if no inverse transform is possible (for example
@@ -224,11 +225,22 @@ class WFC3IRBackwardGrismDispersion(Model):
             raise ValueError("Specified order is not available")
 
         try:
-            if self.lmodels[iorder].n_inputs == 1:
-                t = self.lmodels[iorder](wavelength)
-            elif self.lmodels[iorder].n_inputs == 3:
-                print("In 3 input section")
-                t = self.lmodels[iorder](x, y, wavelength)
+            if interpolate_t:
+                # If the displ coefficients are too complex to invert, have to interpolate t
+                t = np.linspace(0, 1, 40)  #sample t
+                if self.lmodels[iorder].n_inputs == 1:
+                    l = self.lmodels[iorder](wavelength)
+                elif self.lmodels[iorder].n_inputs == 3:
+                    l = lmodel.evaluate(x, y, t)
+                so = np.argsort(l)
+                tab = Tabular1D(l[so], t[so], bounds_error=False, fill_value=None)
+                t = tab(wavelength)
+            else:
+                if self.lmodels[iorder].n_inputs == 1:
+                    t = self.lmodels[iorder](wavelength)
+                elif self.lmodels[iorder].n_inputs == 3:
+                    print("In 3 input section")
+                    t = self.lmodels[iorder](x, y, wavelength)
         except:
             print("Error in lmodel evaluation")
             print("N inputs: {}".format(self.lmodels[iorder].n_inputs))
