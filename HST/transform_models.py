@@ -126,8 +126,18 @@ class WFC3IRForwardGrismDispersion(Model):
         tab = Tabular1D(dx[so], t[so], bounds_error=False, fill_value=None)
 
         dxr = astmath.SubtractUfunc()
-        wavelength = dxr | tab | lmodel
-        model = Mapping((2, 3, 0, 2, 4)) | Const1D(x0) & Const1D(y0) & wavelength & Const1D(order)
+
+        # Need to build this compound model differently depending on lmodel inputs
+        if lmodel.n_inputs == 1:
+            wavelength = dxr | tab | lmodel
+            model = Mapping((2, 3, 0, 2, 4)) | (Const1D(x0) & Const1D(y0) & 
+                                                wavelength & Const1D(order))
+        elif lmodel.n_inputs == 3:
+            wavelength = Identity(2) & dxr | Identity(2) & tab | lmodel
+            model = Mapping((2, 3, 0, 1, 0, 2, 4)) | (Const1D(x0) & Const1D(y0) & 
+                                                      wavelength & Const1D(order))
+
+
         return model(x, y, x0, y0, order)
 
 

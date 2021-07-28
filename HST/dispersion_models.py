@@ -8,6 +8,9 @@ from asdf.extension import Converter
 class DISPXY_Model(Model):
     n_inputs = 3
     n_outputs = 1
+    inputs = ("x", "y", "t")
+    outputs = ("variable",)
+
     _tag = "tag:stsci.edu:grismstuff/dispxy_model-1.0.0"
     _name = "DISPXY_Model"
 
@@ -24,6 +27,9 @@ class DISPXY_Model(Model):
             if self.inv and self.ematrix.shape[1] > 2:
                 # Can't invert these here, need to interpolate from the other direction
                 raise ValueError("Can't invert higher order coefficient matrices")
+
+        # This seems to be needed to avoid an error in calling the model
+        self._model_set_axis = False
 
     # Note that in the inverse case, input "t" here is actually dx or dy
     def evaluate(self, x, y, t):
