@@ -24,7 +24,7 @@ class GrismObs():
     """
 
     def __init__(self, grism_image, direct_image=None, telescope=None, instrument=None,
-                 detector=None, filter=None):
+                 detector=None, filter=None, ccd=None):
 
         # Read grism image file if string input
         if isinstance(grism_image, str):
@@ -66,9 +66,16 @@ class GrismObs():
 
 
         # Build GWCS geometric transform pipeline
-        self._build_geometric_transforms()
+        print(self.instrument)
+        if self.filter == "G280":
+            # Need to build transforms for both channels of UVIS
+            self.geometric_transforms = {}
+            self.geometric_transforms["CCD1"] = self._build_geometric_transforms(channel=1)
+            self.geometric_transforms["CCD2"] = self._build_geometric_transforms(channel=2)
+        else:
+            self.geometric_transforms = self._build_geometric_transforms()
 
-    def _build_geometric_transforms(self):
+    def _build_geometric_transforms(self, channel=None):
 
         """
         Build transform pipeline under the hood so the user doesn't need
@@ -87,24 +94,32 @@ class GrismObs():
         #config_dir = "{}/config/{}/".format(pkg_dir, self.telescope)
         config_dir = pkg_dir / 'config' / self.telescope
 
+        # Account for additional specifications needed for WFC3 instrument and filter
         if self.telescope == "HST":
             if self.filter in ("G102", "G141"):
                 instrument = self.instrument + "_IR"
+                filter = self.filter
             elif self.filter == "G280":
-                instrument = self.instrument + "_UVIS"
+                instrument = f"{self.instrument}_UVIS"
+                filter = f"{self.filter}_CCD{channel}"
         else:
             instrument = self.instrument
+            filter = self.filter
+
         sip_file = config_dir / "{}_distortion.fits".format(instrument)
         spec_wcs_file = config_dir / "{}_{}_specwcs.asdf".format(
                                                        self.instrument,
-                                                       self.filter)
+                                                       filter)
 
         # Build the grism_detector <-> detector transforms
         specwcs = asdf.open(str(spec_wcs_file)).tree
         displ = specwcs['displ']
         dispx = specwcs['dispx']
         dispy = specwcs['dispy']
-        invdispl = specwcs['invdispl']
+        try:
+            invdispl = specwcs['invdispl']
+        except KeyError:
+            invdispl = None
         invdispx = specwcs['invdispx']
         try:
             invdispy = specwcs['invdispy']
@@ -122,10 +137,17 @@ class GrismObs():
                                                ymodels=dispy)
         # TODO: Decide where to raise a warning if we can't do the backward
         # grism transformation (UVIS, at least for now).
-        det2det.inverse = WFC3IRBackwardGrismDispersion(orders,
-                                                        lmodels=invdispl,
-                                                        xmodels=dispx,
-                                                        ymodels=dispy)
+        if invdispl is not None:
+            det2det.inverse = WFC3IRBackwardGrismDispersion(orders,
+                                                            lmodels=invdispl,
+                                                            xmodels=dispx,
+                                                            ymodels=dispy)
+        else:
+            det2det.inverse = WFC3IRBackwardGrismDispersion(orders,
+                                                            lmodels=displ,
+                                                            xmodels=dispx,
+                                                            ymodels=dispy,
+                                                            interpolate_t=True)
 
         grism_pipeline = [(gdetector, det2det)]
 
@@ -209,4 +231,4 @@ class GrismObs():
 
         grism_pipeline.extend(imagepipe)
 
-        self.geometric_transforms = gwcs.WCS(grism_pipeline)
+        return gwcs.WCS(grism_pipeline)
