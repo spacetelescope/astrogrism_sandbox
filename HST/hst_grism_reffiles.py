@@ -55,7 +55,8 @@ def create_grism_specwcs(conffile="",
                          direct_filter=None,
                          author="STScI",
                          history="",
-                         outname=None):
+                         outname=None,
+                         wave_units='Microns'):
     """
     Note: This code is shamelessly stolen from the jwreftools package
     (see https://github.com/spacetelescope/jwreftools/) and adapted for use
@@ -207,9 +208,11 @@ def create_grism_specwcs(conffile="",
     dispy = []
 
     for order in orders:
-        # convert the displ wavelengths to microns if the input
-        # file is still in angstroms
-        l_coeffs = np.array(beamdict[order]['DISPL']) / 10000.
+        # convert the displ wavelengths to microns if desired
+        if wave_units.lower() == "microns":
+            l_coeffs = np.array(beamdict[order]['DISPL']) / 10000.
+        elif wave_units.lower() == "angstrom":
+            l_coeffs = np.array(beamdict[order]['DISPL'])
 
         # create polynomials using the coefficients of each order
 
