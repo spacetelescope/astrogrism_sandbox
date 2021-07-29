@@ -154,14 +154,22 @@ class GrismObs():
         # Now add the detector -> world transform
         sip_hdus = fits.open(str(sip_file))
 
-        acoef = dict(sip_hdus[1].header['A_*'])
+        # Get the correct hdu from the SIP file
+        if channel is not None:
+            for hdu in sip_hdus:
+                if "CCDCHIP" in hdu.header and hdu.header["CCDCHIP"] == channel:
+                    sip_hdu = hdu
+        else:
+            sip_hdu = sip_hdus[1]
+
+        acoef = dict(sip_hdu.header['A_*'])
         a_order = acoef.pop('A_ORDER')
-        bcoef = dict(sip_hdus[1].header['B_*'])
+        bcoef = dict(sip_hdu.header['B_*'])
         b_order = bcoef.pop('B_ORDER')
 
         # Get the inverse SIP polynomial coefficients from file
-        apcoef = dict(sip_hdus[1].header['AP_*'])
-        bpcoef = dict(sip_hdus[1].header['BP_*'])
+        apcoef = dict(sip_hdu.header['AP_*'])
+        bpcoef = dict(sip_hdu.header['BP_*'])
 
         try:
             ap_order = apcoef.pop('AP_ORDER')
