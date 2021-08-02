@@ -9,7 +9,7 @@ from astropy import units as u
 from astropy.modeling.models import Polynomial1D
 
 #from jwst.datamodels import NIRCAMGrismModel
-from .wcs_ref_model import WFC3IRGrismModel
+from .wcs_ref_model import WFC3GrismModel
 from jwst.datamodels import wcs_ref_models
 from .dispersion_models import DISPXY_Model, DISPXY_Extension
 
@@ -55,7 +55,8 @@ def create_grism_specwcs(conffile="",
                          direct_filter=None,
                          author="STScI",
                          history="",
-                         outname=None):
+                         outname=None,
+                         wave_units='Microns'):
     """
     Note: This code is shamelessly stolen from the jwreftools package
     (see https://github.com/spacetelescope/jwreftools/) and adapted for use
@@ -111,25 +112,31 @@ def create_grism_specwcs(conffile="",
 
     Returns
     -------
-    fasdf : asdf.AsdfFile(WFC3IRGrismModel)
+    fasdf : asdf.AsdfFile(WFC3GrismModel)
 
     """
-    if outname is None:
-        outname = "wfc3_ir_specwcs.asdf"
-    if not history:
-        history = "Created from {0:s}".format(conffile)
 
     # if pupil is none get from filename like NIRCAM_modB_R.conf
     if pupil is None:
         pupil = "GRISM" + conffile.split(".")[0][-1]
     print("Pupil is {}".format(pupil))
 
+    if outname is None:
+        outname = "WFC3_{}_specwcs.asdf".format(pupil)
+    if not history:
+        history = "Created from {0:s}".format(conffile)
+
+    if pupil in ("G102", "G141"):
+        channel = "IR"
+    elif pupil == "G280":
+        channel = "UVIS"
+
     ref_kw = common_reference_file_keywords(reftype="specwcs",
-                                            title="HST IR Grism Parameters",
+                                            title=f"HST {channel} Grism Parameters",
                                             description="{0:s} dispersion models".format(pupil),
-                                            exp_type="WFC3_IR",
+                                            exp_type=f"WFC3_{channel}",
                                             author=author,
-                                            model_type="WFC3IRGrismModel",
+                                            model_type=f"WFC3GrismModel",
                                             fname=direct_filter,
                                             pupil=pupil,
                                             filename=outname,
@@ -141,12 +148,19 @@ def create_grism_specwcs(conffile="",
 
     # Get x and y offsets from the filter, if necessary
     if direct_filter is not None:
-        wx = beamdict["WEDGE"][direct_filter][0]
-        wy = beamdict["WEDGE"][direct_filter][0]
+        try:
+            wx = beamdict["WEDGE"][direct_filter][0]
+            wy = beamdict["WEDGE"][direct_filter][0]
+        except KeyError:
+            raise KeyError(f"No WEDGE information for {direct_filer} in conf file")
     else:
         wx, wy = 0, 0
 
-    beamdict.pop("WEDGE")
+    # UVIS conf files don't have WEDGE info
+    try:
+        beamdict.pop("WEDGE")
+    except KeyError:
+        pass
 
     # beam = re.compile('^(?:[+\-]){0,1}[a-zA-Z0-9]{0,1}$')  # match beam only
     # read in the sensitivity tables to save their content
@@ -181,6 +195,8 @@ def create_grism_specwcs(conffile="",
     # pixel in the dispersed image.
     orders = beamdict.keys()
 
+    print(f"Orders: {orders}")
+
     # dispersion models valid per order and direction saved to reference file
     # Forward
     invdispl = []
@@ -192,23 +208,38 @@ def create_grism_specwcs(conffile="",
     dispy = []
 
     for order in orders:
-        # convert the displ wavelengths to microns if the input
-        # file is still in angstroms
-        l0 = beamdict[order]['DISPL'][0] / 10000.
-        l1 = beamdict[order]['DISPL'][1] / 10000.
+        # convert the displ wavelengths to microns if desired
+        if wave_units.lower() == "microns":
+            l_coeffs = np.array(beamdict[order]['DISPL']) / 10000.
+        elif wave_units.lower() == "angstrom":
+            l_coeffs = np.array(beamdict[order]['DISPL'])
 
         # create polynomials using the coefficients of each order
 
         # This holds the wavelength lookup coeffs
         # This model is  INVDISPL for backward and returns t
         # This model should be DISPL for forward and returns wavelength
-        if l1 == 0:
-            lmodel = Polynomial1D(1, c0=0, c1=0)
+        if l_coeffs.shape == (2,):
+            l0 = l_coeffs[0]
+            l1 = l_coeffs[1]
+            if l1 == 0:
+                lmodel = Polynomial1D(1, c0=0, c1=0)
+            else:
+                lmodel = Polynomial1D(1, c0=-l0/l1, c1=1./l1)
+            invdispl.append(lmodel)
+            lmodel = Polynomial1D(1, c0=l0, c1=l1)
+            displ.append(lmodel)
         else:
-            lmodel = Polynomial1D(1, c0=-l0/l1, c1=1./l1)
-        invdispl.append(lmodel)
-        lmodel = Polynomial1D(1, c0=l0, c1=l1)
-        displ.append(lmodel)
+            # Can't invert higher order in t
+            if len(l_coeffs.shape) > 1:
+                try:
+                    lmodel = DISPXY_Model(l_coeffs, 0, inv=True)
+                except ValueError:
+                    lmodel=None
+            invdispl.append(lmodel)
+
+            lmodel = DISPXY_Model(l_coeffs, 0)
+            displ.append(lmodel)
 
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
@@ -223,8 +254,11 @@ def create_grism_specwcs(conffile="",
         e = beamdict[order]['DISPY']
         ymodel = DISPXY_Model(e, wy)
         dispy.append(ymodel)
-        inv_ymodel = DISPXY_Model(e, wy, inv=True)
-        invdispy.append(ymodel)
+        try:
+            inv_ymodel = DISPXY_Model(e, wy, inv=True)
+            invdispy.append(ymodel)
+        except:
+            invdispy.append(None)
 
     # change the orders into translatable integers
     # so that we can look up the order with the proper index
@@ -233,7 +267,7 @@ def create_grism_specwcs(conffile="",
     # We need to register the converter for the DISPXY_Model class with asdf
     asdf.get_config().add_extension(DISPXY_Extension())
 
-    ref = WFC3IRGrismModel()
+    ref = WFC3GrismModel(channel=channel)
     ref.meta.update(ref_kw)
     # This reference file is good for NRC_WFSS and TSGRISM modes
     ref.meta.exposure.p_exptype = "NRC_WFSS|NRC_TSGRISM"
@@ -241,9 +275,7 @@ def create_grism_specwcs(conffile="",
     ref.meta.output_units = u.micron
     ref.displ = displ
     ref.dispx = dispx
-    print(ref.dispx)
     ref.dispy = dispy
-    print(ref.dispy)
     ref.invdispx = invdispx
     ref.invdispy = invdispy
     ref.invdispl = invdispl
@@ -463,7 +495,7 @@ def split_order_info(keydict):
 
     # has beam name fits token
     token = re.compile('^[a-zA-Z]*_(?:[+\-]){0,1}[a-zA-Z0-9]{0,1}_*')
-    rangekey = re.compile('^[a-zA-Z]*_[0-1]{1,1}$')
+    rangekey = re.compile('^[a-zA-Z]*_[0-1]{0,1}[0-9]{1,1}$')
     rdict = dict()  # return dictionary
     beams = list()
 
@@ -503,15 +535,10 @@ def split_order_info(keydict):
             mlist = [m for m in rkeys if k.split("_")[0] in m]
             root = mlist[0].split("_")[0]
             if root not in odict:
+                temp_list = []
                 for mk in mlist:
-                    if eval(mk[-1]) == 0:
-                        zero = d[mk]
-                    elif eval(mk[-1]) == 1:
-                        one = d[mk]
-                    else:
-                        raise ValueError("Unexpected range variable {}"
-                                         .format(mk))
-                odict[root] = (zero, one)
+                    temp_list.append(d[mk])
+                odict[root] = tuple(temp_list)
         # combine the dictionaries and remove the old keys
         d.update(odict)
         for k in rkeys:
@@ -587,6 +614,6 @@ def dict_from_file(filename):
         if key and (value is not None):
             if (("FILTER" not in key) and ("SENSITIVITY" not in key)):
                 content[key] = value
-                print("Setting {0:s} = {1}".format(key, value))
+                #print("Setting {0:s} = {1}".format(key, value))
 
     return content
