@@ -130,6 +130,8 @@ def create_grism_specwcs(conffile="",
         channel = "IR"
     elif pupil == "G280":
         channel = "UVIS"
+    elif pupil == "G800L":
+        channel = "WFC"
 
     ref_kw = common_reference_file_keywords(reftype="specwcs",
                                             title=f"HST {channel} Grism Parameters",
@@ -244,20 +246,28 @@ def create_grism_specwcs(conffile="",
         # This holds the x coefficients, for the R grism this model is the
         # the INVDISPX returning t, for the C grism this model is the DISPX
         e = beamdict[order]['DISPX']
+        print(f"Order: {order}")
+        print(f"e_x: {np.array(e).shape}")
         xmodel = DISPXY_Model(e, wx)
         dispx.append(xmodel)
-        inv_xmodel = DISPXY_Model(e, wx, inv=True)
-        invdispx.append(inv_xmodel)
+        try:
+            inv_xmodel = DISPXY_Model(e, wx, inv=True)
+            invdispx.append(inv_xmodel)
+        except:
+            print("Must interpolate x inverse")
+            invdispx.append(None)
 
         # This holds the y coefficients, for the C grism, this model is
         # the INVDISPY, returning t, for the R grism, this model is the DISPY
         e = beamdict[order]['DISPY']
+        print(f"e_y: {np.array(e).shape}")
         ymodel = DISPXY_Model(e, wy)
         dispy.append(ymodel)
         try:
             inv_ymodel = DISPXY_Model(e, wy, inv=True)
             invdispy.append(ymodel)
         except:
+            print("Must interpolate y inverse")
             invdispy.append(None)
 
     # change the orders into translatable integers
